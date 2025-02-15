@@ -1,10 +1,15 @@
 <script setup>
 import { ref } from 'vue'
+import DeviceStatus from '@/components/home/DeviceStatus.vue'
+import ServerStatus from '@/components/home/ServerStatus.vue'
 import {
   Monitor,
   Cpu,
   SetUp,
-  Expand
+  Expand,
+  CircleCheck,
+  Warning,
+  Loading
 } from '@element-plus/icons-vue'
 
 const features = [
@@ -29,10 +34,119 @@ const features = [
     description: '采用模块化设计，支持灵活扩展，满足不同场景的定制化需求。'
   }
 ]
+
+const devices = ref([
+  {
+    name: '电机',
+    type: 'motor',
+    status: 'normal',
+    connected: false,
+    protocol: 'modbus_rtu',
+    config: {
+      com: 'COM1',
+      baudRate: 9600
+    }
+  },
+  {
+    name: '风机',
+    type: 'fan',
+    status: 'warning',
+    connected: false,
+    protocol: 'modbus_tcp',
+    config: {
+      ip: '192.168.1.100',
+      port: '502'
+    }
+  },
+  {
+    name: '水泵',
+    type: 'pump',
+    status: 'normal',
+    connected: false,
+    protocol: 'rs485',
+    config: {
+      com: 'COM2',
+      baudRate: 19200
+    }
+  }
+])
+
+const servers = ref([
+  {
+    name: '训练服务器 A',
+    type: 'training',
+    status: 'idle',
+    ip: '192.168.1.201',
+    port: '8080',
+    load: '20%',
+    memory: '4.2/32GB'
+  },
+  {
+    name: '训练服务器 B',
+    type: 'training',
+    status: 'training',
+    ip: '192.168.1.202',
+    port: '8080',
+    load: '85%',
+    memory: '28.5/32GB'
+  },
+  {
+    name: '摊销服务器',
+    type: 'deploy',
+    status: 'deploying',
+    ip: '192.168.1.203',
+    port: '8080',
+    load: '60%',
+    memory: '16.8/32GB'
+  }
+])
+
+const getStatusType = (status) => {
+  const types = {
+    normal: 'success',
+    warning: 'warning',
+    error: 'danger',
+    idle: 'info',
+    training: 'warning',
+    deploying: 'success'
+  }
+  return types[status] || 'info'
+}
+
+const getStatusText = (status) => {
+  const texts = {
+    idle: '空闲',
+    training: '训练中',
+    deploying: '摊销中'
+  }
+  return texts[status] || status
+}
+
+const handleDevicesUpdate = (newDevices) => {
+  devices.value = newDevices
+}
+
+const handleServersUpdate = (newServers) => {
+  servers.value = newServers
+}
 </script>
 
 <template>
   <div class="home-container">
+    <!-- 状态监控面板 -->
+    <el-row :gutter="20" class="status-panel">
+      <el-col :span="12">
+        <DeviceStatus
+          v-model:devices="devices"
+        />
+      </el-col>
+      <el-col :span="12">
+        <ServerStatus
+          v-model:servers="servers"
+        />
+      </el-col>
+    </el-row>
+
     <el-card class="welcome-card">
       <template #header>
         <div class="card-header">
@@ -174,5 +288,103 @@ const features = [
 
 .el-row {
   margin-bottom: 20px;
+}
+
+.status-panel {
+  margin-bottom: 20px;
+}
+
+.status-card {
+  height: 100%;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.device-grid {
+  padding: 10px 0;
+}
+
+.device-item {
+  text-align: center;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid #ebeef5;
+}
+
+.device-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+
+.device-disconnected {
+  opacity: 0.6;
+}
+
+.device-item h4 {
+  margin: 10px 0;
+  color: #303133;
+}
+
+.device-item .el-icon {
+  font-size: 24px;
+}
+
+.device-item .normal {
+  color: #67C23A;
+}
+
+.device-item .warning {
+  color: #E6A23C;
+}
+
+.device-item .error {
+  color: #F56C6C;
+}
+
+.server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.server-item {
+  padding: 15px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.server-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.server-info h4 {
+  margin: 0;
+  color: #303133;
+}
+
+.server-metrics {
+  display: flex;
+  gap: 20px;
+  color: #606266;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+:deep(.el-progress-bar__inner) {
+  transition: all 0.3s ease;
+}
+
+:deep(.el-progress--line) {
+  margin-bottom: 0;
 }
 </style> 
