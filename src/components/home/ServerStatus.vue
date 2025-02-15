@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Cpu, Plus, Setting, Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   servers: {
@@ -189,15 +190,16 @@ onBeforeUnmount(() => {
       <div class="card-header">
         <div class="header-left">
           <el-icon><Cpu /></el-icon>
-          <span>服务器状态监控</span>
+          <span class="header-title">服务器状态监控</span>
         </div>
         <el-button 
           type="primary" 
           size="small" 
           @click="addServerDialogVisible = true"
-          :icon="Plus"
+          class="header-button"
         >
-          添加服务器
+          <el-icon><Plus /></el-icon>
+          <span>添加服务器</span>
         </el-button>
       </div>
     </template>
@@ -334,12 +336,27 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 32px; /* 固定头部高度 */
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.header-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 15px;
+  height: 32px;
 }
 
 .server-list {
@@ -417,5 +434,10 @@ onBeforeUnmount(() => {
 
 :deep(.el-dialog__body) {
   padding-top: 20px;
+}
+
+:deep(.el-card__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #ebeef5;
 }
 </style> 

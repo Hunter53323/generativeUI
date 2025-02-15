@@ -6,12 +6,10 @@ import {
   Monitor,
   Cpu,
   SetUp,
-  Expand,
-  CircleCheck,
-  Warning,
-  Loading
+  Expand
 } from '@element-plus/icons-vue'
 
+// 特性卡片数据
 const features = [
   {
     title: '实时感知',
@@ -35,6 +33,7 @@ const features = [
   }
 ]
 
+// 设备数据
 const devices = ref([
   {
     id: 'motor_1',
@@ -74,6 +73,7 @@ const devices = ref([
   }
 ])
 
+// 服务器数据
 const servers = ref([
   {
     name: '训练服务器 A',
@@ -104,36 +104,7 @@ const servers = ref([
   }
 ])
 
-const getStatusType = (status) => {
-  const types = {
-    normal: 'success',
-    warning: 'warning',
-    error: 'danger',
-    idle: 'info',
-    training: 'warning',
-    deploying: 'success'
-  }
-  return types[status] || 'info'
-}
-
-const getStatusText = (status) => {
-  const texts = {
-    idle: '空闲',
-    training: '训练中',
-    deploying: '摊销中'
-  }
-  return texts[status] || status
-}
-
-const handleDevicesUpdate = (newDevices) => {
-  devices.value = newDevices
-}
-
-const handleServersUpdate = (newServers) => {
-  servers.value = newServers
-}
-
-// 添加拖动调整大小的功能
+// 拖动调整大小功能
 const initResize = () => {
   const handle = document.querySelector('.resize-handle')
   const aside = document.querySelector('.resizable-aside')
@@ -154,8 +125,8 @@ const initResize = () => {
 
     const width = startWidth + (e.pageX - startX)
     const containerWidth = container.offsetWidth
-    const minWidth = containerWidth * 0.3 // 最小 30%
-    const maxWidth = containerWidth * 0.7 // 最大 70%
+    const minWidth = containerWidth * 0.3
+    const maxWidth = containerWidth * 0.7
 
     if (width >= minWidth && width <= maxWidth) {
       aside.style.width = `${width}px`
@@ -380,10 +351,6 @@ onMounted(() => {
     width: 100% !important;
     border-right: none;
     border-bottom: 1px solid #ebeef5;
-  }
-
-  .resize-handle {
-    display: none;
   }
 }
 </style> 

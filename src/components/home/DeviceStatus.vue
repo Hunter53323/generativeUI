@@ -10,6 +10,7 @@ import {
   Link,
   SwitchButton
 } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   devices: {
@@ -214,10 +215,12 @@ const handleDeleteDevice = (device) => {
       type: 'warning',
     }
   ).then(() => {
-    localDevices.value = localDevices.value.filter(d => d.id !== device.id) // 使用id过滤
+    localDevices.value = localDevices.value.filter(d => d.id !== device.id)
     emit('update:devices', localDevices.value)
     ElMessage.success('设备删除成功')
-  }).catch(() => {})
+  }).catch(() => {
+    // 用户取消删除时不做任何操作
+  })
 }
 </script>
 
@@ -227,15 +230,16 @@ const handleDeleteDevice = (device) => {
       <div class="card-header">
         <div class="header-left">
           <el-icon><Monitor /></el-icon>
-          <span>设备状态监控</span>
+          <span class="header-title">设备状态监控</span>
         </div>
         <el-button 
           type="primary" 
           size="small" 
           @click="addDeviceDialogVisible = true"
-          :icon="Plus"
+          class="header-button"
         >
-          添加设备
+          <el-icon><Plus /></el-icon>
+          <span>添加设备</span>
         </el-button>
       </div>
     </template>
@@ -405,12 +409,27 @@ const handleDeleteDevice = (device) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 32px; /* 固定头部高度 */
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.header-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 15px;
+  height: 32px;
 }
 
 .device-grid {
@@ -503,5 +522,10 @@ const handleDeleteDevice = (device) => {
 
 .device-content {
   padding: 0;
+}
+
+:deep(.el-card__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #ebeef5;
 }
 </style> 
