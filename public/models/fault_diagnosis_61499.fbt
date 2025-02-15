@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE FBType SYSTEM "http://www.holobloc.com/xml/LibraryElement.dtd" >
+<FBType Name="FaultDiagnosis" Comment="Fault Diagnosis Function Block">
+  <Identification Standard="61499-2"/>
+  <VersionInfo Organization="Example Corp" Version="1.0"/>
+  <InterfaceList>
+    <EventInputs>
+      <Event Name="INIT" Comment="Initialization Request">
+        <With Var="QI"/>
+      </Event>
+      <Event Name="REQ" Comment="Normal Execution Request">
+        <With Var="InputData"/>
+      </Event>
+    </EventInputs>
+    <EventOutputs>
+      <Event Name="INITO" Comment="Initialization Confirm">
+        <With Var="QO"/>
+      </Event>
+      <Event Name="CNF" Comment="Execution Confirmation">
+        <With Var="OutputData"/>
+      </Event>
+    </EventOutputs>
+    <InputVars>
+      <VarDeclaration Name="QI" Type="BOOL" Comment="Input event qualifier"/>
+      <VarDeclaration Name="InputData" Type="REAL" Comment="Input data"/>
+    </InputVars>
+    <OutputVars>
+      <VarDeclaration Name="QO" Type="BOOL" Comment="Output event qualifier"/>
+      <VarDeclaration Name="OutputData" Type="REAL" Comment="Output data"/>
+    </OutputVars>
+  </InterfaceList>
+  <BasicFB>
+    <ECC>
+      <ECState Name="START" Comment="Initial State"/>
+      <ECState Name="INIT" Comment="Initialization">
+        <ECAction Algorithm="INIT" Output="INITO"/>
+      </ECState>
+      <ECState Name="REQ" Comment="Normal execution">
+        <ECAction Algorithm="REQ" Output="CNF"/>
+      </ECState>
+    </ECC>
+    <Algorithm Name="INIT" Comment="Initialization algorithm">
+      <ST Text="QO := QI;"/>
+    </Algorithm>
+    <Algorithm Name="REQ" Comment="Normal execution algorithm">
+      <ST Text="OutputData := InputData * 2.0;"/>
+    </Algorithm>
+  </BasicFB>
+</FBType> 

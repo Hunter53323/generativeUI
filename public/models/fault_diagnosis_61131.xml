@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0200">
+  <fileHeader company="Example Corp" product="Fault Diagnosis" version="1.0"/>
+  <contentHeader>
+    <coordinateInfo>
+      <fbd>
+        <scaling x="1" y="1"/>
+      </fbd>
+    </coordinateInfo>
+  </contentHeader>
+  <types>
+    <dataTypes/>
+    <pous>
+      <pou name="FaultDiagnosis" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="Input1">
+              <type>
+                <REAL/>
+              </type>
+            </variable>
+          </inputVars>
+          <outputVars>
+            <variable name="Output1">
+              <type>
+                <REAL/>
+              </type>
+            </variable>
+          </outputVars>
+        </interface>
+        <body>
+          <FBD>
+            <!-- 功能块图实现 -->
+          </FBD>
+        </body>
+      </pou>
+    </pous>
+  </types>
+</project> 
