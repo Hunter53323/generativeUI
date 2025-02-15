@@ -8,6 +8,7 @@ import {
   SetUp,
   Expand
 } from '@element-plus/icons-vue'
+import { useDeviceStore } from '@/stores/devicestatus'
 
 // 特性卡片数据
 const features = [
@@ -34,44 +35,7 @@ const features = [
 ]
 
 // 设备数据
-const devices = ref([
-  {
-    id: 'motor_1',
-    name: '电机',
-    type: 'motor',
-    status: 'normal',
-    connected: false,
-    protocol: 'modbus_rtu',
-    config: {
-      com: 'COM1',
-      baudRate: 9600
-    }
-  },
-  {
-    id: 'fan_1',
-    name: '风机',
-    type: 'fan',
-    status: 'warning',
-    connected: false,
-    protocol: 'modbus_tcp',
-    config: {
-      ip: '192.168.1.100',
-      port: '502'
-    }
-  },
-  {
-    id: 'pump_1',
-    name: '水泵',
-    type: 'pump',
-    status: 'normal',
-    connected: false,
-    protocol: 'rs485',
-    config: {
-      com: 'COM2',
-      baudRate: 19200
-    }
-  }
-])
+
 
 // 服务器数据
 const servers = ref([
@@ -139,6 +103,8 @@ const initResize = () => {
   })
 }
 
+const deviceStore = useDeviceStore()
+
 onMounted(() => {
   initResize()
 })
@@ -176,7 +142,7 @@ onMounted(() => {
       <el-container>
         <el-aside width="50%" class="resizable-aside">
           <div class="resize-handle"></div>
-          <DeviceStatus v-model:devices="devices" />
+          <DeviceStatus v-model:devices="deviceStore.devices" />
         </el-aside>
         <el-main class="monitor-main">
           <ServerStatus v-model:servers="servers" />

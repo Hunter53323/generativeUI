@@ -29,6 +29,12 @@ const judgeShow = () => {
       </el-icon>
       <template #title>首页</template>
     </el-menu-item>
+    <el-menu-item index="/devicedashboard">
+      <el-icon>
+        <location />
+      </el-icon>
+      <template #title>设备仪表盘</template>
+    </el-menu-item>
     <el-menu-item index="/dashboard">
       <el-icon>
         <location />

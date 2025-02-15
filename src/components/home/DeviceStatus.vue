@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Monitor,
   CircleCheck,
@@ -10,7 +11,16 @@ import {
   Link,
   SwitchButton
 } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  PROTOCOL_TYPES,
+  DEVICE_TYPES,
+  STATUS_OPTIONS,
+  STATUS_TYPES,
+  isSerialProtocol
+} from '@/constants/devicestatus'
+import { useDeviceStore } from '@/stores/devicestatus'
+
+const deviceStore = useDeviceStore()
 
 const props = defineProps({
   devices: {
@@ -22,40 +32,6 @@ const props = defineProps({
 const emit = defineEmits(['update:devices'])
 
 const localDevices = ref([...props.devices])
-
-// 协议类型定义
-const protocolTypes = [
-  { 
-    label: 'Modbus RTU',
-    value: 'modbus_rtu',
-    type: 'serial'
-  },
-  { 
-    label: 'Modbus TCP',
-    value: 'modbus_tcp',
-    type: 'network'
-  },
-  {
-    label: 'RS485',
-    value: 'rs485',
-    type: 'serial'
-  }
-]
-
-const deviceTypes = [
-  { label: '电机', value: 'motor' },
-  { label: '风机', value: 'fan' },
-  { label: '水泵', value: 'pump' },
-  { label: '压缩机', value: 'compressor' },
-  { label: '传感器', value: 'sensor' },
-  { label: '控制器', value: 'controller' }
-]
-
-const statusOptions = [
-  { label: '正常', value: 'normal' },
-  { label: '警告', value: 'warning' },
-  { label: '错误', value: 'error' }
-]
 
 const addDeviceDialogVisible = ref(false)
 const editDeviceDialogVisible = ref(false)
@@ -83,11 +59,6 @@ const getStatusType = (status) => {
     error: 'danger'
   }
   return types[status] || 'info'
-}
-
-const isSerialProtocol = (protocol) => {
-  const protocolInfo = protocolTypes.find(p => p.value === protocol)
-  return protocolInfo?.type === 'serial'
 }
 
 const handleAddDevice = () => {
@@ -295,7 +266,7 @@ const handleDeleteDevice = (device) => {
               {{ device.connected ? '已连接' : '未连接' }}
             </el-tag>
             <div class="device-protocol">
-              {{ protocolTypes.find(p => p.value === device.protocol)?.label }}
+              {{ PROTOCOL_TYPES.find(p => p.value === device.protocol)?.label }}
             </div>
           </div>
         </div>
@@ -315,7 +286,7 @@ const handleDeleteDevice = (device) => {
         <el-form-item label="设备类型">
           <el-select v-model="newDevice.type" placeholder="请选择设备类型">
             <el-option
-              v-for="item in deviceTypes"
+              v-for="item in DEVICE_TYPES"
               :key="item.value"
               :label="item.label"
               :value="item.value"
@@ -325,7 +296,7 @@ const handleDeleteDevice = (device) => {
         <el-form-item label="通信协议">
           <el-select v-model="newDevice.protocol" placeholder="请选择通信协议">
             <el-option
-              v-for="item in protocolTypes"
+              v-for="item in PROTOCOL_TYPES"
               :key="item.value"
               :label="item.label"
               :value="item.value"
@@ -379,7 +350,7 @@ const handleDeleteDevice = (device) => {
         <el-form-item label="设备状态">
           <el-select v-model="currentDevice.status" placeholder="请选择设备状态">
             <el-option
-              v-for="item in statusOptions"
+              v-for="item in STATUS_OPTIONS"
               :key="item.value"
               :label="item.label"
               :value="item.value"

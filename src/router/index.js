@@ -6,6 +6,7 @@ import ModelView from '@/views/ModelView.vue'
 import DataNotationView from '../views/DataNotationView.vue'
 import DataCleaningView from '../views/DataCleaningView.vue'
 import HomeView from '../views/HomeView.vue'
+import DeviceDashboardView from '../views/DeviceDashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView
+    },
+    {
+      path: '/devicedashboard',
+      name: 'devicedashboard',
+      component: DeviceDashboardView
     },
     {
       path: '/dashboard',
