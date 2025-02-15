@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import DeviceStatus from '@/components/home/DeviceStatus.vue'
 import ServerStatus from '@/components/home/ServerStatus.vue'
 import {
@@ -37,6 +37,7 @@ const features = [
 
 const devices = ref([
   {
+    id: 'motor_1',
     name: '电机',
     type: 'motor',
     status: 'normal',
@@ -48,6 +49,7 @@ const devices = ref([
     }
   },
   {
+    id: 'fan_1',
     name: '风机',
     type: 'fan',
     status: 'warning',
@@ -59,6 +61,7 @@ const devices = ref([
     }
   },
   {
+    id: 'pump_1',
     name: '水泵',
     type: 'pump',
     status: 'normal',
@@ -129,30 +132,51 @@ const handleDevicesUpdate = (newDevices) => {
 const handleServersUpdate = (newServers) => {
   servers.value = newServers
 }
+
+// 添加拖动调整大小的功能
+const initResize = () => {
+  const handle = document.querySelector('.resize-handle')
+  const aside = document.querySelector('.resizable-aside')
+  const container = document.querySelector('.monitor-container')
+
+  let isResizing = false
+  let startX, startWidth
+
+  handle.addEventListener('mousedown', (e) => {
+    isResizing = true
+    startX = e.pageX
+    startWidth = aside.offsetWidth
+    document.body.style.cursor = 'col-resize'
+  })
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return
+
+    const width = startWidth + (e.pageX - startX)
+    const containerWidth = container.offsetWidth
+    const minWidth = containerWidth * 0.3 // 最小 30%
+    const maxWidth = containerWidth * 0.7 // 最大 70%
+
+    if (width >= minWidth && width <= maxWidth) {
+      aside.style.width = `${width}px`
+    }
+  })
+
+  document.addEventListener('mouseup', () => {
+    isResizing = false
+    document.body.style.cursor = ''
+  })
+}
+
+onMounted(() => {
+  initResize()
+})
 </script>
 
 <template>
   <div class="home-container">
-    <!-- 状态监控面板 -->
-    <el-row :gutter="20" class="status-panel">
-      <el-col :span="12">
-        <DeviceStatus
-          v-model:devices="devices"
-        />
-      </el-col>
-      <el-col :span="12">
-        <ServerStatus
-          v-model:servers="servers"
-        />
-      </el-col>
-    </el-row>
-
+    <!-- 欢迎卡片 -->
     <el-card class="welcome-card">
-      <template #header>
-        <div class="card-header">
-          <span>欢迎使用</span>
-        </div>
-      </template>
       <div class="welcome-content">
         <h1>生成式综合管控系统</h1>
         <div class="system-intro">
@@ -164,7 +188,7 @@ const handleServersUpdate = (newServers) => {
           <el-row :gutter="20">
             <el-col :span="6" v-for="feature in features" :key="feature.title">
               <div class="feature-card">
-                <el-icon :size="40" class="feature-icon">
+                <el-icon :size="32" class="feature-icon">
                   <component :is="feature.icon" />
                 </el-icon>
                 <h3>{{ feature.title }}</h3>
@@ -173,218 +197,193 @@ const handleServersUpdate = (newServers) => {
             </el-col>
           </el-row>
         </div>
-
-        <el-divider>
-          <el-icon><Cpu /></el-icon>
-        </el-divider>
-
-        <p class="start-hint">请从左侧菜单选择功能开始使用</p>
       </div>
     </el-card>
+
+    <!-- 状态监控面板 -->
+    <div class="monitor-container">
+      <el-container>
+        <el-aside width="50%" class="resizable-aside">
+          <div class="resize-handle"></div>
+          <DeviceStatus v-model:devices="devices" />
+        </el-aside>
+        <el-main class="monitor-main">
+          <ServerStatus v-model:servers="servers" />
+        </el-main>
+      </el-container>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .home-container {
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: #f0f2f5;
   min-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .welcome-card {
-  max-width: 1200px;
-  margin: 40px auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
-  font-size: 18px;
-  font-weight: bold;
-  color: #303133;
+  width: calc(100% - 40px);
+  margin: 0 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f6f9fc 100%);
+  border: none;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+  flex-shrink: 0;
 }
 
 .welcome-content {
   text-align: center;
-  padding: 40px 20px;
+  padding: 20px;
 }
 
 .welcome-content h1 {
   color: #303133;
-  margin-bottom: 30px;
-  font-size: 32px;
+  margin-bottom: 15px;
+  font-size: 24px;
   font-weight: 600;
   background: linear-gradient(45deg, #409EFF, #36cfc9);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
 }
 
 .system-intro {
-  max-width: 800px;
-  margin: 0 auto 40px;
-  line-height: 1.8;
+  max-width: none;
+  margin: 0 auto 20px;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 15px;
+  border-radius: 8px;
 }
 
 .system-intro p {
   color: #606266;
-  font-size: 16px;
-  margin-bottom: 15px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .features-grid {
-  margin: 40px 0;
+  margin: 15px 0 5px;
 }
 
 .feature-card {
-  background: #fff;
-  padding: 30px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
   height: 100%;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+  border: 1px solid #ebeef5;
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
 }
 
 .feature-icon {
   color: #409EFF;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  background: rgba(64, 158, 255, 0.1);
+  padding: 8px;
+  border-radius: 8px;
 }
 
 .feature-card h3 {
   color: #303133;
-  margin-bottom: 15px;
-  font-size: 18px;
+  margin-bottom: 8px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .feature-card p {
   color: #606266;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
-.start-hint {
-  color: #909399;
-  font-size: 16px;
-  margin-top: 30px;
+.monitor-container {
+  flex: 0 0 600px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 20px;
+  display: flex;
 }
 
-:deep(.el-card__header) {
-  padding: 15px 20px;
-  border-bottom: 1px solid #EBEEF5;
-  background: linear-gradient(to right, #f5f7fa, #fff);
-}
-
-:deep(.el-divider__text) {
-  background-color: transparent;
-}
-
-:deep(.el-divider .el-icon) {
-  color: #409EFF;
-}
-
-.el-row {
-  margin-bottom: 20px;
-}
-
-.status-panel {
-  margin-bottom: 20px;
-}
-
-.status-card {
+.el-container {
+  width: 100%;
   height: 100%;
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.device-grid {
-  padding: 10px 0;
-}
-
-.device-item {
-  text-align: center;
-  padding: 20px;
+.resizable-aside {
+  position: relative;
   background: #fff;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: 1px solid #ebeef5;
+  border-right: 1px solid #ebeef5;
+  transition: none;
+  display: flex;
 }
 
-.device-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
 }
 
-.device-disconnected {
-  opacity: 0.6;
+.resize-handle:hover {
+  background: rgba(64, 158, 255, 0.1);
 }
 
-.device-item h4 {
-  margin: 10px 0;
-  color: #303133;
+.resize-handle:active {
+  background: rgba(64, 158, 255, 0.2);
 }
 
-.device-item .el-icon {
-  font-size: 24px;
+.monitor-main {
+  padding: 0;
+  background: #fff;
+  display: flex;
 }
 
-.device-item .normal {
-  color: #67C23A;
-}
-
-.device-item .warning {
-  color: #E6A23C;
-}
-
-.device-item .error {
-  color: #F56C6C;
-}
-
-.server-list {
+.resizable-aside :deep(.el-card),
+.monitor-main :deep(.el-card) {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  border: none;
+  box-shadow: none;
+  max-height: 600px;
 }
 
-.server-item {
+.resizable-aside :deep(.el-card__body),
+.monitor-main :deep(.el-card__body) {
+  flex: 1;
+  overflow-y: auto;
   padding: 15px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ebeef5;
 }
 
-.server-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
+@media (max-width: 768px) {
+  .el-container {
+    flex-direction: column;
+  }
 
-.server-info h4 {
-  margin: 0;
-  color: #303133;
-}
+  .resizable-aside {
+    width: 100% !important;
+    border-right: none;
+    border-bottom: 1px solid #ebeef5;
+  }
 
-.server-metrics {
-  display: flex;
-  gap: 20px;
-  color: #606266;
-  font-size: 13px;
-  margin-bottom: 10px;
-}
-
-:deep(.el-progress-bar__inner) {
-  transition: all 0.3s ease;
-}
-
-:deep(.el-progress--line) {
-  margin-bottom: 0;
+  .resize-handle {
+    display: none;
+  }
 }
 </style> 

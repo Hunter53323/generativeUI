@@ -54,15 +54,25 @@ const getStatusText = (status) => {
   return texts[status] || status
 }
 
+// 根据服务器状态获取负载范围
+const getLoadRange = (status) => {
+  switch (status) {
+    case 'idle':
+      return { min: 5, max: 15 }  // 空闲状态：5-15%
+    case 'training':
+      return { min: 70, max: 95 } // 训练状态：70-95%
+    case 'deploying':
+      return { min: 40, max: 65 } // 摊销状态：40-65%
+    default:
+      return { min: 0, max: 10 }
+  }
+}
+
 // 更新服务器负载
 const updateServerLoad = (server) => {
-  if (server.status === 'idle') {
-    return '10%'
-  }
-  
-  const baseLoad = server.status === 'training' ? 70 : 50
-  const variation = Math.floor(Math.random() * 20)
-  return `${baseLoad + variation}%`
+  const range = getLoadRange(server.status)
+  const variation = Math.random() * (range.max - range.min)
+  return `${Math.floor(range.min + variation)}%`
 }
 
 // 开始负载监控
@@ -71,18 +81,26 @@ const startLoadMonitoring = (server) => {
     clearInterval(loadIntervals.value[server.name])
   }
   
-  if (server.status !== 'idle') {
-    loadIntervals.value[server.name] = setInterval(() => {
-      const index = localServers.value.findIndex(s => s.name === server.name)
-      if (index !== -1) {
-        localServers.value[index] = {
-          ...localServers.value[index],
-          load: updateServerLoad(server)
-        }
-        emit('update:servers', localServers.value)
-      }
-    }, 3000)
+  // 立即更新一次负载
+  const index = localServers.value.findIndex(s => s.name === server.name)
+  if (index !== -1) {
+    localServers.value[index] = {
+      ...localServers.value[index],
+      load: updateServerLoad(server)
+    }
   }
+  
+  // 设置定时更新
+  loadIntervals.value[server.name] = setInterval(() => {
+    const index = localServers.value.findIndex(s => s.name === server.name)
+    if (index !== -1) {
+      localServers.value[index] = {
+        ...localServers.value[index],
+        load: updateServerLoad(localServers.value[index])
+      }
+      emit('update:servers', localServers.value)
+    }
+  }, 3000)
 }
 
 const handleAddServer = () => {
@@ -98,12 +116,13 @@ const handleAddServer = () => {
   }
   
   localServers.value.push(server)
-  startLoadMonitoring(server)
+  startLoadMonitoring(server) // 开始负载监控
   emit('update:servers', localServers.value)
   addServerDialogVisible.value = false
   
   newServer.value = {
     name: '',
+    type: 'training',
     status: 'idle',
     ip: '',
     port: '',
@@ -122,7 +141,7 @@ const handleUpdateServer = () => {
   const index = localServers.value.findIndex(s => s.name === currentServer.value.name)
   if (index !== -1) {
     localServers.value[index] = { ...currentServer.value }
-    startLoadMonitoring(currentServer.value)
+    startLoadMonitoring(currentServer.value) // 重新开始负载监控
     emit('update:servers', localServers.value)
     editServerDialogVisible.value = false
     ElMessage.success('服务器更新成功')

@@ -108,9 +108,24 @@ const handleAddDevice = () => {
     }
   }
 
-  localDevices.value.push({ ...newDevice.value })
+  // 生成唯一ID
+  const id = `${newDevice.value.type}_${Date.now()}`
+
+  const server = {
+    ...newDevice.value,
+    id, // 添加唯一标识
+    status: 'normal',
+    connected: false,
+    config: {
+      ...newDevice.value.config
+    }
+  }
+  
+  localDevices.value.push(server)
   emit('update:devices', localDevices.value)
   addDeviceDialogVisible.value = false
+  
+  // 重置表单
   newDevice.value = {
     name: '',
     type: '',
@@ -128,13 +143,12 @@ const handleAddDevice = () => {
 }
 
 const handleConnect = async (device) => {
-  const index = localDevices.value.findIndex(d => d.type === device.type)
+  const index = localDevices.value.findIndex(d => d.id === device.id) // 使用id查找
   if (index === -1) return
 
-  connecting.value = device.type
+  connecting.value = device.id // 使用id作为标识
   
   try {
-    // 模拟连接过程
     await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000))
     
     localDevices.value[index] = {
@@ -152,10 +166,10 @@ const handleConnect = async (device) => {
 }
 
 const handleDisconnect = async (device) => {
-  const index = localDevices.value.findIndex(d => d.type === device.type)
+  const index = localDevices.value.findIndex(d => d.id === device.id) // 使用id查找
   if (index === -1) return
 
-  connecting.value = device.type
+  connecting.value = device.id // 使用id作为标识
   
   try {
     // 模拟断开连接过程
@@ -181,7 +195,7 @@ const handleEditDevice = (device) => {
 }
 
 const handleUpdateDevice = () => {
-  const index = localDevices.value.findIndex(d => d.type === currentDevice.value.type)
+  const index = localDevices.value.findIndex(d => d.id === currentDevice.value.id)
   if (index !== -1) {
     localDevices.value[index] = { ...currentDevice.value }
     emit('update:devices', localDevices.value)
@@ -200,7 +214,7 @@ const handleDeleteDevice = (device) => {
       type: 'warning',
     }
   ).then(() => {
-    localDevices.value = localDevices.value.filter(d => d.type !== device.type)
+    localDevices.value = localDevices.value.filter(d => d.id !== device.id) // 使用id过滤
     emit('update:devices', localDevices.value)
     ElMessage.success('设备删除成功')
   }).catch(() => {})
@@ -226,7 +240,7 @@ const handleDeleteDevice = (device) => {
       </div>
     </template>
     <el-row :gutter="20" class="device-grid">
-      <el-col :span="6" v-for="device in localDevices" :key="device.type">
+      <el-col :span="6" v-for="device in localDevices" :key="device.id">
         <div class="device-item" :class="{ 'device-disconnected': !device.connected }">
           <div class="device-actions device-actions-left">
             <template v-if="device.connected">
@@ -235,7 +249,7 @@ const handleDeleteDevice = (device) => {
                 :icon="SwitchButton"
                 circle
                 size="small"
-                :loading="connecting === device.type"
+                :loading="connecting === device.id"
                 @click="handleDisconnect(device)"
               />
             </template>
@@ -245,7 +259,7 @@ const handleDeleteDevice = (device) => {
                 :icon="Link"
                 circle
                 size="small"
-                :loading="connecting === device.type"
+                :loading="connecting === device.id"
                 @click="handleConnect(device)"
               />
             </template>
