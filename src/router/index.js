@@ -5,12 +5,18 @@ import DatabaseView from '../views/DatabaseView.vue'
 import ModelView from '@/views/ModelView.vue'
 import DataNotationView from '../views/DataNotationView.vue'
 import DataCleaningView from '../views/DataCleaningView.vue'
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
+      name: 'home',
+      component: HomeView
+    },
+    {
+      path: '/dashboard',
       name: 'dashboard',
       component: DashboardView
     },

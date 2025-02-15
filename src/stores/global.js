@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, h, reactive } from 'vue'
+import { ref, h, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox, ElForm, ElFormItem, ElInput } from 'element-plus'
 import DBExportBox from '@/components/database/DBExportBox.vue'
 import StatementBox from '@/components/database/StatementBox.vue'
@@ -351,6 +351,35 @@ export const useDBStore = defineStore('database', {
           ElMessage.info('数据编辑取消')
         })
     }
+  }
+})
+
+export const useDeviceStatusStore = defineStore('deviceStatus', () => {
+  const connectedDevices = ref(12)
+  const normalDevices = ref(10)
+  const abnormalDevices = ref(2)
+  
+  // 计算属性
+  const deviceStatusData = computed(() => ({
+    connected: connectedDevices.value,
+    normal: normalDevices.value,
+    abnormal: abnormalDevices.value,
+    normalRate: ((normalDevices.value / connectedDevices.value) * 100).toFixed(1)
+  }))
+
+  // 更新方法
+  const updateDeviceStatus = (connected, normal, abnormal) => {
+    connectedDevices.value = connected
+    normalDevices.value = normal
+    abnormalDevices.value = abnormal
+  }
+
+  return {
+    connectedDevices,
+    normalDevices,
+    abnormalDevices,
+    deviceStatusData,
+    updateDeviceStatus
   }
 })
 
