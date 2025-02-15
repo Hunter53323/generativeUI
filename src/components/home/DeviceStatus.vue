@@ -29,7 +29,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:devices'])
+const emit = defineEmits(['update:devices', 'device-click'])
 
 const localDevices = ref([...props.devices])
 
@@ -193,6 +193,11 @@ const handleDeleteDevice = (device) => {
     // 用户取消删除时不做任何操作
   })
 }
+
+// 在设备卡片上添加点击事件
+const handleDeviceClick = (device) => {
+  emit('device-click', device)
+}
 </script>
 
 <template>
@@ -216,7 +221,7 @@ const handleDeleteDevice = (device) => {
     </template>
     <el-row :gutter="20" class="device-grid">
       <el-col :span="6" v-for="device in localDevices" :key="device.id">
-        <div class="device-item" :class="{ 'device-disconnected': !device.connected }">
+        <div class="device-item" :class="{ 'device-disconnected': !device.connected }" @click="handleDeviceClick(device)">
           <div class="device-actions device-actions-left">
             <template v-if="device.connected">
               <el-button 
@@ -415,6 +420,7 @@ const handleDeleteDevice = (device) => {
   border-radius: 8px;
   transition: all 0.3s ease;
   border: 1px solid #ebeef5;
+  cursor: pointer;
 }
 
 .device-item:hover {

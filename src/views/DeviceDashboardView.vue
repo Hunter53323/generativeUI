@@ -1,337 +1,190 @@
+<script setup>
+import { ref, computed } from 'vue'
+import DeviceStatus from '@/components/home/DeviceStatus.vue'
+import DeviceControl from '@/components/devicedashboard/DeviceControl.vue'
+import DeviceChart from '@/components/devicedashboard/DeviceChart.vue'
+import { useDeviceStore } from '@/stores/devicestatus'
+import { useDeviceControlStore } from '@/stores/deviceControl'
+import { ElEmpty } from 'element-plus'
+
+const deviceStore = useDeviceStore()
+const deviceControlStore = useDeviceControlStore()
+const selectedDevice = ref(null)
+
+// 处理设备选择
+const handleDeviceSelect = (device) => {
+  selectedDevice.value = device
+}
+
+// 获取设备类型对应的参数配置
+const deviceParams = computed(() => {
+  if (!selectedDevice.value) return []
+  
+  switch (selectedDevice.value.type) {
+    case 'motor':
+      return [
+        { label: '转速', value: '1500', unit: 'rpm' },
+        { label: '电流', value: '10.5', unit: 'A' },
+        { label: '电压', value: '380', unit: 'V' },
+        { label: '功率', value: '5.5', unit: 'kW' }
+      ]
+    case 'pump':
+      return [
+        { label: '流量', value: '50', unit: 'm³/h' },
+        { label: '压力', value: '0.6', unit: 'MPa' },
+        { label: '转速', value: '2900', unit: 'rpm' }
+      ]
+    // ... 其他设备类型的参数配置
+    default:
+      return []
+  }
+})
+</script>
+
 <template>
-    <div class="model-container">
-      <el-card class="model-card">
-        <template #header>
-          <div class="card-header">
-            <span class="title">模型管理</span>
-          </div>
-        </template>
-        
-        <!-- 模型选择区域 -->
-        <div class="section">
-          <h3>模型选择</h3>
-          <el-select
-            v-model="selectedModel"
-            placeholder="请选择模型"
-            class="model-select"
-          >
-            <el-option
-              v-for="item in modelOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </div>
-  
-        <!-- 模型验证区域 -->
-        <div class="section">
-          <h3>模型验证</h3>
-          <el-table :data="validationResults" style="width: 100%">
-            <el-table-column prop="metric" label="验证指标" />
-            <el-table-column prop="status" label="状态">
-              <template #default="scope">
-                <el-tag :type="scope.row.status === 'success' ? 'success' : 'warning'">
-                  {{ scope.row.status === 'success' ? '通过' : '警告' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="details" label="详情" />
-          </el-table>
-          <el-button 
-            type="primary" 
-            @click="handleValidation" 
-            :loading="isValidating"
-            class="action-button"
-          >
-            开始验证
-          </el-button>
-        </div>
-  
-        <!-- 性能评估区域 -->
-        <div class="section">
-          <h3>性能评估</h3>
-          <el-row :gutter="20" class="metrics-container">
-            <el-col :span="6">
-              <el-card shadow="hover">
-                <template #header>准确率</template>
-                <div class="metric-value">{{ performanceData.accuracy * 100 }}%</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover">
-                <template #header>精确率</template>
-                <div class="metric-value">{{ performanceData.precision * 100 }}%</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover">
-                <template #header>召回率</template>
-                <div class="metric-value">{{ performanceData.recall * 100 }}%</div>
-              </el-card>
-            </el-col>
-            <el-col :span="6">
-              <el-card shadow="hover">
-                <template #header>F1得分</template>
-                <div class="metric-value">{{ performanceData.f1Score * 100 }}%</div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </div>
-  
-        <!-- 发布按钮区域 -->
-        <div class="section">
-          <h3>模型发布</h3>
-          <div class="deploy-container">
-            <el-select
-              v-model="selectedServer"
-              placeholder="请选择摊销服务器"
-              class="server-select"
-            >
-              <el-option
-                v-for="item in serverOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
-  
-            <el-select
-              v-model="selectedFormat"
-              placeholder="请选择导出格式"
-              class="format-select"
-            >
-              <el-option
-                v-for="item in exportFormats"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
-            
-            <el-button 
-              type="primary" 
-              @click="handleDeploy" 
-              :loading="isDeploying"
-              :disabled="!selectedModel || !selectedFormat || !selectedServer"
-              class="deploy-button"
-            >
-              模型摊销
-            </el-button>
-            
-            <el-button 
-              type="success" 
-              @click="handleDownload" 
-              :disabled="!isDeployed"
-              class="download-button"
-            >
-              下载模型
-            </el-button>
-          </div>
-        </div>
-      </el-card>
+  <div class="dashboard-container">
+    <!-- 设备状态监控 -->
+    <div class="status-section">
+      <DeviceStatus 
+        v-model:devices="deviceStore.devices" 
+        @device-click="handleDeviceSelect"
+      />
     </div>
-  </template>
-  
-  <script lang="ts" setup>
-  import { ref } from 'vue'
-  import { ElMessage } from 'element-plus'
-  import type { FormInstance, FormRules } from 'element-plus'
-  
-  const modelOptions = [
-    {
-      value: 'model1',
-      label: '故障诊断模型 V1.0'
-    },
-    {
-      value: 'model2',
-      label: '故障诊断模型 V2.0'
-    },
-    {
-      value: 'model3',
-      label: '预测性维护模型 V1.0'
-    }
-  ]
-  
-  const selectedModel = ref('')
-  const performanceData = ref({
-    accuracy: 0.95,
-    precision: 0.93,
-    recall: 0.94,
-    f1Score: 0.935
-  })
-  
-  const validationResults = ref([
-    { metric: '数据一致性', status: 'success', details: '通过验证' },
-    { metric: '模型完整性', status: 'success', details: '通过验证' },
-    { metric: '输入输出格式', status: 'warning', details: '部分字段需要调整' }
-  ])
-  
-  const isValidating = ref(false)
-  const isDeploying = ref(false)
-  const isDeployed = ref(false)
-  const downloadUrl = ref('')
-  
-  // 添加导出格式选项
-  const exportFormats = [
-    {
-      value: 'iec61499',
-      label: 'IEC 61499'
-    },
-    {
-      value: 'iec61131',
-      label: 'IEC 61131'
-    },
-    {
-      value: 'c',
-      label: 'C文件'
-    }
-  ]
-  
-  const selectedFormat = ref('')
-  
-  // 添加服务器选项
-  const serverOptions = [
-    {
-      value: 'server1',
-      label: '机架服务器1'
-    },
-    {
-      value: 'server2',
-      label: '机架服务器2'
-    }
-  ]
-  
-  const selectedServer = ref('')
-  
-  const handleValidation = () => {
-    isValidating.value = true
-    setTimeout(() => {
-      isValidating.value = false
-      ElMessage.success('模型验证完成')
-    }, 2000)
-  }
-  
-  // 模型摊销处理函数
-  const handleDeploy = () => {
-    if (!selectedModel.value || !selectedFormat.value || !selectedServer.value) {
-      ElMessage.warning('请选择模型、导出格式和服务器')
-      return
-    }
-    
-    isDeploying.value = true
-    ElMessage.info('正在进行模型摊销，请稍候...')
-    
-    // 模拟摊销过程
-    setTimeout(() => {
-      isDeploying.value = false
-      isDeployed.value = true
+
+    <!-- 设备详情和控制 -->
+    <div class="dashboard-content">
+      <template v-if="selectedDevice">
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <!-- 设备基本信息 -->
+            <el-card class="detail-card info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>设备信息</span>
+                </div>
+              </template>
+              <div class="device-info">
+                <div class="info-item">
+                  <span class="label">设备名称：</span>
+                  <span>{{ selectedDevice.name }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">设备类型：</span>
+                  <span>{{ selectedDevice.type }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">通信协议：</span>
+                  <span>{{ selectedDevice.protocol }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">连接状态：</span>
+                  <el-tag :type="selectedDevice.connected ? 'success' : 'danger'" size="small">
+                    {{ selectedDevice.connected ? '已连接' : '未连接' }}
+                  </el-tag>
+                </div>
+              </div>
+            </el-card>
+
+            <!-- 设备控制 -->
+            <el-card class="detail-card control-card">
+              <template #header>
+                <div class="card-header">
+                  <span>设备控制</span>
+                </div>
+              </template>
+              <DeviceControl :device="selectedDevice" />
+            </el-card>
+          </el-col>
+
+          <!-- 运行状态图表 -->
+          <el-col :span="16">
+            <el-card class="chart-card">
+              <template #header>
+                <div class="card-header">
+                  <span>运行状态图表</span>
+                </div>
+              </template>
+              <DeviceChart :device="selectedDevice" />
+            </el-card>
+          </el-col>
+        </el-row>
+      </template>
       
-      // 根据不同格式生成不同的下载链接
-      const fileMap = {
-        'iec61499': '/models/fault_diagnosis_61499.fbt',
-        'iec61131': '/models/fault_diagnosis_61131.xml',
-        'c': '/models/fault_diagnosis.c'
-      }
-      downloadUrl.value = fileMap[selectedFormat.value]
-      
-      ElMessage.success(`模型已在${selectedServer.value === 'server1' ? '机架服务器1' : '机架服务器2'}上完成摊销`)
-    }, 3000)
-  }
-  
-  // 下载处理函数
-  const handleDownload = () => {
-    // 这里模拟文件下载
-    const link = document.createElement('a')
-    link.href = downloadUrl.value
-    link.download = downloadUrl.value.split('/').pop() || 'model'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    ElMessage.success('开始下载')
-  }
-  </script>
-  
-  <style scoped>
-  .model-container {
-    padding: 20px;
-  }
-  
-  .model-card {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .title {
-    font-size: 18px;
-    font-weight: bold;
-  }
-  
-  .section {
-    margin-bottom: 30px;
-  }
-  
-  .section h3 {
-    margin-bottom: 20px;
-    color: #606266;
-    font-size: 16px;
-  }
-  
-  .model-select {
-    width: 100%;
-    max-width: 400px;
-  }
-  
-  .metrics-container {
-    margin-top: 20px;
-  }
-  
-  .metric-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: #409EFF;
-    text-align: center;
-  }
-  
-  .action-button {
-    margin-top: 20px;
-  }
-  
-  .deploy-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-top: 20px;
-  }
-  
-  .server-select,
-  .format-select {
-    width: 200px;
-  }
-  
-  .deploy-button, .download-button {
-    width: 120px;
-  }
-  
-  :deep(.el-card__header) {
-    padding: 15px 20px;
-    border-bottom: 1px solid #EBEEF5;
-    background-color: #F5F7FA;
-  }
-  
-  :deep(.el-card) {
-    margin-bottom: 20px;
-    border-radius: 8px;
-  }
-  
-  :deep(.el-table) {
-    margin-top: 15px;
-  }
-  </style>
-  
+      <el-empty v-else description="请选择设备查看详情" />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.dashboard-container {
+  padding: 20px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status-section {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+}
+
+.dashboard-content {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+}
+
+.detail-card {
+  margin-bottom: 20px;
+}
+
+.info-card {
+  height: auto;
+  min-height: 200px;
+}
+
+.control-card {
+  height: auto;
+  flex: 1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-item .label {
+  color: #909399;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.chart-card {
+  height: 100%;
+}
+
+.chart-container {
+  height: 400px;
+  width: 100%;
+}
+</style>
