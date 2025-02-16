@@ -644,6 +644,21 @@ export const useSettingsStore = defineStore('settings', {
             type: 'error'
           })
         })
+    },
+    async updateUserInfo() {
+      try {
+        await ElMessageBox({
+          title: '修改用户信息',
+          message: h(UserChangeBox),
+          showConfirmButton: false,
+          closeOnClickModal: false,
+          closeOnPressEscape: false,
+          showClose: true,
+          customClass: 'user-change-form'
+        })
+      } catch (error) {
+        console.error('用户取消修改或发生错误:', error)
+      }
     }
   }
 })

@@ -39,6 +39,7 @@
 <script setup>
 import { Clock, CaretBottom, Edit, Timer } from '@element-plus/icons-vue'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useSettingsStore } from '@/stores/global'
 
 const props = defineProps({
   user: {
@@ -52,6 +53,8 @@ const emit = defineEmits(['user-click'])
 
 const currentTime = ref('')
 let timer = null
+
+const settings = useSettingsStore()
 
 const updateTime = () => {
   const now = new Date()
@@ -68,7 +71,7 @@ const updateTime = () => {
 
 const handleCommand = (command) => {
   if (command === 'editProfile') {
-    emit('user-click')
+    settings.updateUserInfo()
   }
 }
 
