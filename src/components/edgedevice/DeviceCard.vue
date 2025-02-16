@@ -18,6 +18,23 @@ const infoDialogVisible = ref(false)
 const deviceInfo = ref(null)
 const loading = ref(false)
 
+// 在设备初始化时添加默认模型
+const defaultModel = {
+  id: 'default_model',
+  name: '基础模型',
+  type: 'base',
+  fileSize: 2048,
+  uploadTime: Date.now(),
+  active: true,
+  isDefault: true,
+  sensitivity: 'medium'
+}
+
+// 确保设备有默认模型
+if (props.device.models && !props.device.models.find(m => m.isDefault)) {
+  props.device.models.unshift(defaultModel)
+}
+
 const handleConnect = () => {
   emit('connect', props.device)
 }

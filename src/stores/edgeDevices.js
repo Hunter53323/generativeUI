@@ -121,12 +121,24 @@ export const useEdgeDevicesStore = defineStore('edgeDevices', {
       const newId = this.devices.length > 0 
         ? Math.max(...this.devices.map(d => d.id)) + 1 
         : 1
+      
+      const defaultModel = {
+        id: 'default_model',
+        name: '基础模型',
+        type: 'base',
+        fileSize: 2048,
+        uploadTime: Date.now(),
+        active: true,  // 设置为 true，表示默认选中
+        isDefault: true,
+        sensitivity: 'medium'
+      }
+
       this.devices.push({
         ...device,
         id: newId,
         status: false,
         loading: false,
-        models: []
+        models: [defaultModel]  // 初始化时包含默认模型
       })
     },
 
@@ -187,6 +199,16 @@ export const useEdgeDevicesStore = defineStore('edgeDevices', {
         device.models.forEach(m => {
           m.active = m.id === modelId
         })
+      }
+    },
+
+    updateModelSensitivity(deviceId, modelId, sensitivity) {
+      const device = this.devices.find(d => d.id === deviceId)
+      if (device) {
+        const model = device.models.find(m => m.id === modelId)
+        if (model) {
+          model.sensitivity = sensitivity
+        }
       }
     }
   }
