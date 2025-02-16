@@ -50,10 +50,12 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
   const deviceParams = ref({})
   const deviceHistory = ref({})
   const updateIntervals = ref({})
+  const deviceUpdateRates = ref({}) // 每个设备的更新频率
 
   const getDeviceStatus = (deviceId) => deviceStatus.value[deviceId] || 'stopped'
   const getDeviceParams = (deviceId) => deviceParams.value[deviceId] || {}
   const getDeviceHistory = (deviceId) => deviceHistory.value[deviceId] || []
+  const getDeviceUpdateRate = (deviceId) => deviceUpdateRates.value[deviceId] || 0
 
   const addRandomVariation = (value, percentage = 0.1) => {
     const variation = (Math.random() - 0.5) * 2 * (value * percentage)
@@ -135,25 +137,47 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
     )
   }
 
+  const updateDeviceRate = (deviceId) => {
+    // 确保更新频率有初始值
+    if (!deviceUpdateRates.value[deviceId]) {
+      deviceUpdateRates.value[deviceId] = 0
+    }
+    deviceUpdateRates.value[deviceId] = Math.floor(50 + Math.random() * 50)
+  }
+
   const startDevice = (deviceId, deviceType) => {
     deviceStatus.value[deviceId] = 'running'
     deviceParams.value[deviceId] = { ...DEVICE_DEFAULTS[deviceType] }
     
+    // 先初始化更新频率
+    updateDeviceRate(deviceId)
+    
     // 启动数据更新
     if (updateIntervals.value[deviceId]) {
-      clearInterval(updateIntervals.value[deviceId])
+      clearInterval(updateIntervals.value[deviceId].dataInterval)
+      clearInterval(updateIntervals.value[deviceId].rateInterval)
     }
-    updateIntervals.value[deviceId] = setInterval(() => {
-      updateDeviceData(deviceId, deviceType)
-    }, 100)
+
+    // 设置数据更新和频率更新的定时器
+    updateIntervals.value[deviceId] = {
+      dataInterval: setInterval(() => {
+        updateDeviceData(deviceId, deviceType)
+      }, 100),
+      rateInterval: setInterval(() => {
+        updateDeviceRate(deviceId)
+      }, 1000)
+    }
   }
 
   const stopDevice = (deviceId) => {
     deviceStatus.value[deviceId] = 'stopped'
     if (updateIntervals.value[deviceId]) {
-      clearInterval(updateIntervals.value[deviceId])
+      clearInterval(updateIntervals.value[deviceId].dataInterval)
+      clearInterval(updateIntervals.value[deviceId].rateInterval)
       delete updateIntervals.value[deviceId]
     }
+    // 确保停止时设置为0
+    deviceUpdateRates.value[deviceId] = 0
   }
 
   const updateDeviceParam = (deviceId, paramKey, value) => {
@@ -169,6 +193,7 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
     getDeviceHistory,
     startDevice,
     stopDevice,
-    updateDeviceParam
+    updateDeviceParam,
+    getDeviceUpdateRate
   }
 }) 
