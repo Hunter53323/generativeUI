@@ -57,13 +57,13 @@ const judgeShow = () => {
       <el-icon>
         <document />
       </el-icon>
-      <span>数据标注平台</span>
+      <template #title>数据标注平台</template>
     </el-menu-item>
     <el-menu-item index="/datacleaning">
       <el-icon>
         <refresh />
       </el-icon>
-      <span>数据清洗</span>
+      <template #title>数据清洗</template>
     </el-menu-item>
     <el-menu-item index="/model">
       <el-icon>
@@ -76,6 +76,12 @@ const judgeShow = () => {
         <message />
       </el-icon>
       <template #title>模型训练</template>
+    </el-menu-item>
+    <el-menu-item index="/edge-devices">
+      <el-icon>
+        <location />
+      </el-icon>
+      <template #title>边缘设备管理</template>
     </el-menu-item>
   </el-menu>
 </template>

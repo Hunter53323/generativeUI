@@ -7,6 +7,7 @@ import DataNotationView from '../views/DataNotationView.vue'
 import DataCleaningView from '../views/DataCleaningView.vue'
 import HomeView from '../views/HomeView.vue'
 import DeviceDashboardView from '../views/DeviceDashboardView.vue'
+import EdgeDevicesView from '../views/EdgeDevicesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,11 @@ const router = createRouter({
       path: '/datacleaning',
       name: 'datacleaning',
       component: DataCleaningView
+    },
+    {
+      path: '/edge-devices',
+      name: 'edge-devices',
+      component: EdgeDevicesView
     }
   ]
 })
