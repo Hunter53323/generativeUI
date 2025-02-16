@@ -6,6 +6,7 @@ import { onMounted, reactive, h } from '@vue/runtime-core';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import UserChangeBox from './components/UserChangeBox.vue';
 import { useRouter } from 'vue-router';
+import TopInfoBar from '@/components/common/TopInfoBar.vue'
 
 
 const router = useRouter()
@@ -61,15 +62,10 @@ const db = useDBStore()
           </el-col>
           <el-col :span="12">
             <div class="user-info">
-              <el-button link @click="settings.changeUser">
-                <el-text size="large">
-                  {{ settings.user.name }}
-                </el-text>
-                <el-divider direction="vertical" class="info-divider" />
-                <el-text size="large">
-                  {{ settings.user.email }}
-                </el-text>
-              </el-button>
+              <top-info-bar 
+                :user="settings.user" 
+                @user-click="settings.changeUser"
+              />
             </div>
           </el-col>
         </el-row>
@@ -108,7 +104,7 @@ const db = useDBStore()
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  color: #2d2d2f;
+  padding-right: 20px;
 }
 
 .info-divider {
