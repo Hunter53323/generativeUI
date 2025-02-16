@@ -1,117 +1,174 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { RUNNING_STATUS, DEVICE_PARAMS_CONFIG, generateRandomValue } from '@/constants/deviceControl'
+import { ref } from 'vue'
+
+const DEVICE_DEFAULTS = {
+  stepper_motor: {
+    speed: 1500,
+    current: 2.5,
+    voltage: 48,
+    power: 0.12,
+    position: 180
+  },
+  async_motor: {
+    speed: 1500,
+    current: 10,
+    voltage: 380,
+    power: 5.5,
+    frequency: 50,
+    slip: 3.5
+  },
+  pmsm_motor: {
+    speed: 3000,
+    current: 8,
+    voltage: 380,
+    power: 4.0,
+    torque: 12.5,
+    efficiency: 96
+  },
+  fan: {
+    speed: 2900,
+    airflow: 5000,
+    pressure: 800,
+    power: 7.5
+  },
+  pump: {
+    speed: 2900,
+    flow: 50,
+    head: 32,
+    power: 5.5
+  },
+  compressor: {
+    speed: 3000,
+    pressure: 0.8,
+    temperature: 75,
+    power: 11
+  }
+}
 
 export const useDeviceControlStore = defineStore('deviceControl', () => {
-  // 设备运行状态
-  const runningDevices = ref({})
-  // 设备参数历史数据
-  const deviceHistory = ref({})
-  // 设备控制参数
+  const deviceStatus = ref({})
   const deviceParams = ref({})
-  // 更新间隔
-  const updateInterval = ref(1000)
-  // 存储定时器
-  const timers = ref({})
+  const deviceHistory = ref({})
+  const updateIntervals = ref({})
 
-  // 初始化设备参数
-  const initDeviceParams = (deviceId, type) => {
-    if (!deviceParams.value[deviceId]) {
-      const config = DEVICE_PARAMS_CONFIG[type]
-      if (config) {
-        deviceParams.value[deviceId] = config.controlParams.reduce((acc, param) => {
-          acc[param.key] = param.default
-          return acc
-        }, {})
+  const getDeviceStatus = (deviceId) => deviceStatus.value[deviceId] || 'stopped'
+  const getDeviceParams = (deviceId) => deviceParams.value[deviceId] || {}
+  const getDeviceHistory = (deviceId) => deviceHistory.value[deviceId] || []
+
+  const addRandomVariation = (value, percentage = 0.1) => {
+    const variation = (Math.random() - 0.5) * 2 * (value * percentage)
+    return value + variation
+  }
+
+  const updateDeviceData = (deviceId, deviceType) => {
+    const currentParams = { ...deviceParams.value[deviceId] }
+    const timestamp = Date.now()
+
+    // 根据设备类型更新参数
+    switch (deviceType) {
+      case 'stepper_motor': {
+        // 添加转速小幅波动
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.current = Number(addRandomVariation(currentParams.current, 0.05).toFixed(2))
+        currentParams.voltage = Number(addRandomVariation(currentParams.voltage, 0.02).toFixed(2))
+        currentParams.power = Number((currentParams.current * currentParams.voltage / 1000).toFixed(2))
+        currentParams.position = Number(addRandomVariation(currentParams.position, 0.02).toFixed(2))
+        break
+      }
+      case 'async_motor': {
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.current = Number(addRandomVariation(currentParams.current, 0.05).toFixed(2))
+        currentParams.voltage = Number(addRandomVariation(currentParams.voltage, 0.02).toFixed(2))
+        currentParams.power = Number((currentParams.current * currentParams.voltage * 1.732 * 0.85 / 1000).toFixed(2))
+        currentParams.frequency = Number(addRandomVariation(currentParams.frequency, 0.02).toFixed(2))
+        currentParams.slip = Number(addRandomVariation(currentParams.slip, 0.05).toFixed(2))
+        break
+      }
+      case 'pmsm_motor': {
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.current = Number(addRandomVariation(currentParams.current, 0.05).toFixed(2))
+        currentParams.voltage = Number(addRandomVariation(currentParams.voltage, 0.02).toFixed(2))
+        currentParams.power = Number((currentParams.current * currentParams.voltage * 1.732 * 0.95 / 1000).toFixed(2))
+        currentParams.torque = Number(addRandomVariation(currentParams.torque, 0.05).toFixed(2))
+        currentParams.efficiency = Number(addRandomVariation(currentParams.efficiency, 0.01).toFixed(2))
+        break
+      }
+      case 'fan': {
+        // 添加转速小幅波动
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.airflow = Number(addRandomVariation(currentParams.airflow, 0.05).toFixed(2))
+        currentParams.pressure = Number(addRandomVariation(currentParams.pressure, 0.05).toFixed(2))
+        currentParams.power = Number(addRandomVariation(currentParams.power, 0.05).toFixed(2))
+        break
+      }
+      case 'pump': {
+        // 添加转速小幅波动
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.flow = Number(addRandomVariation(currentParams.flow, 0.05).toFixed(2))
+        currentParams.head = Number(addRandomVariation(currentParams.head, 0.05).toFixed(2))
+        currentParams.power = Number(addRandomVariation(currentParams.power, 0.05).toFixed(2))
+        break
+      }
+      case 'compressor': {
+        // 添加转速小幅波动
+        currentParams.speed = Number((currentParams.speed * (1 + (Math.random() - 0.5) * 0.01)).toFixed(2))
+        currentParams.pressure = Number(addRandomVariation(currentParams.pressure, 0.05).toFixed(2))
+        currentParams.temperature = Number(addRandomVariation(currentParams.temperature, 0.05).toFixed(2))
+        currentParams.power = Number(addRandomVariation(currentParams.power, 0.05).toFixed(2))
+        break
       }
     }
-  }
 
-  // 启动设备
-  const startDevice = (deviceId, type) => {
-    if (!runningDevices.value[deviceId]) {
-      runningDevices.value[deviceId] = RUNNING_STATUS.RUNNING
-      initDeviceParams(deviceId, type)
-      startDataCollection(deviceId, type)
-    }
-  }
-
-  // 停止设备
-  const stopDevice = (deviceId) => {
-    runningDevices.value[deviceId] = RUNNING_STATUS.STOPPED
-    if (timers.value[deviceId]) {
-      clearInterval(timers.value[deviceId])
-      delete timers.value[deviceId]
-    }
-  }
-
-  // 开始数据采集
-  const startDataCollection = (deviceId, type) => {
+    deviceParams.value[deviceId] = currentParams
     if (!deviceHistory.value[deviceId]) {
       deviceHistory.value[deviceId] = []
     }
+    deviceHistory.value[deviceId].push({
+      timestamp,
+      values: { ...currentParams }
+    })
 
-    timers.value[deviceId] = setInterval(() => {
-      const config = DEVICE_PARAMS_CONFIG[type]
-      const timestamp = new Date()
-      const newData = {
-        timestamp,
-        values: {}
-      }
-
-      config.controlParams.forEach(param => {
-        newData.values[param.key] = generateRandomValue(
-          param,
-          runningDevices.value[deviceId] === RUNNING_STATUS.RUNNING
-        )
-      })
-
-      deviceHistory.value[deviceId].push(newData)
-      // 只保留最近100个数据点
-      if (deviceHistory.value[deviceId].length > 100) {
-        deviceHistory.value[deviceId].shift()
-      }
-    }, updateInterval.value)
+    // 只保留最近5分钟的数据
+    const fiveMinutesAgo = timestamp - 5 * 60 * 1000
+    deviceHistory.value[deviceId] = deviceHistory.value[deviceId].filter(
+      item => item.timestamp > fiveMinutesAgo
+    )
   }
 
-  // 更新设备参数
-  const updateDeviceParam = (deviceId, paramKey, value) => {
-    if (deviceParams.value[deviceId]) {
-      deviceParams.value[deviceId][paramKey] = value
+  const startDevice = (deviceId, deviceType) => {
+    deviceStatus.value[deviceId] = 'running'
+    deviceParams.value[deviceId] = { ...DEVICE_DEFAULTS[deviceType] }
+    
+    // 启动数据更新
+    if (updateIntervals.value[deviceId]) {
+      clearInterval(updateIntervals.value[deviceId])
+    }
+    updateIntervals.value[deviceId] = setInterval(() => {
+      updateDeviceData(deviceId, deviceType)
+    }, 100)
+  }
+
+  const stopDevice = (deviceId) => {
+    deviceStatus.value[deviceId] = 'stopped'
+    if (updateIntervals.value[deviceId]) {
+      clearInterval(updateIntervals.value[deviceId])
+      delete updateIntervals.value[deviceId]
     }
   }
 
-  // 获取设备运行状态
-  const getDeviceStatus = (deviceId) => {
-    return runningDevices.value[deviceId] || RUNNING_STATUS.STOPPED
-  }
-
-  // 获取设备历史数据
-  const getDeviceHistory = (deviceId) => {
-    return deviceHistory.value[deviceId] || []
-  }
-
-  // 获取设备当前参数
-  const getDeviceParams = (deviceId) => {
-    return deviceParams.value[deviceId] || {}
-  }
-
-  // 清理所有定时器
-  const clearAllTimers = () => {
-    Object.values(timers.value).forEach(timer => clearInterval(timer))
-    timers.value = {}
+  const updateDeviceParam = (deviceId, paramKey, value) => {
+    if (!deviceParams.value[deviceId]) {
+      deviceParams.value[deviceId] = {}
+    }
+    deviceParams.value[deviceId][paramKey] = value
   }
 
   return {
-    runningDevices,
-    deviceHistory,
-    deviceParams,
+    getDeviceStatus,
+    getDeviceParams,
+    getDeviceHistory,
     startDevice,
     stopDevice,
-    updateDeviceParam,
-    getDeviceStatus,
-    getDeviceHistory,
-    getDeviceParams,
-    clearAllTimers
+    updateDeviceParam
   }
 }) 

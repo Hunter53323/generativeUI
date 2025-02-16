@@ -19,12 +19,12 @@ export const PROTOCOL_TYPES = [
 
 // 设备类型定义
 export const DEVICE_TYPES = [
-  { label: '电机', value: 'motor' },
+  { label: '步进电机', value: 'stepper_motor' },
+  { label: '异步电机', value: 'async_motor' },
+  { label: '永磁电机', value: 'pmsm_motor' },
   { label: '风机', value: 'fan' },
   { label: '水泵', value: 'pump' },
-  { label: '压缩机', value: 'compressor' },
-  { label: '传感器', value: 'sensor' },
-  { label: '控制器', value: 'controller' }
+  { label: '压缩机', value: 'compressor' }
 ]
 
 // 状态选项

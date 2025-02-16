@@ -5,15 +5,39 @@ export const useDeviceStore = defineStore('device', () => {
   // 设备列表
   const devices = ref([
     {
-      id: 'motor_1',
-      name: '电机',
-      type: 'motor',
+      id: 'stepper_motor_1',
+      name: '步进电机',
+      type: 'stepper_motor',
       status: 'normal',
       connected: false,
       protocol: 'modbus_rtu',
       config: {
         com: 'COM1',
         baudRate: 9600
+      }
+    },
+    {
+      id: 'async_motor_1',
+      name: '异步电机',
+      type: 'async_motor',
+      status: 'normal',
+      connected: false,
+      protocol: 'modbus_tcp',
+      config: {
+        ip: '192.168.1.100',
+        port: '502'
+      }
+    },
+    {
+      id: 'pmsm_motor_1',
+      name: '永磁电机',
+      type: 'pmsm_motor',
+      status: 'normal',
+      connected: false,
+      protocol: 'rs485',
+      config: {
+        com: 'COM2',
+        baudRate: 19200
       }
     },
     {
@@ -24,7 +48,7 @@ export const useDeviceStore = defineStore('device', () => {
       connected: false,
       protocol: 'modbus_tcp',
       config: {
-        ip: '192.168.1.100',
+        ip: '192.168.1.101',
         port: '502'
       }
     },
@@ -36,7 +60,7 @@ export const useDeviceStore = defineStore('device', () => {
       connected: false,
       protocol: 'rs485',
       config: {
-        com: 'COM2',
+        com: 'COM3',
         baudRate: 19200
       }
     },
@@ -45,30 +69,6 @@ export const useDeviceStore = defineStore('device', () => {
       name: '压缩机',
       type: 'compressor',
       status: 'error',
-      connected: false,
-      protocol: 'modbus_tcp',
-      config: {
-        ip: '192.168.1.101',
-        port: '502'
-      }
-    },
-    {
-      id: 'sensor_1',
-      name: '温度传感器',
-      type: 'sensor',
-      status: 'normal',
-      connected: false,
-      protocol: 'modbus_rtu',
-      config: {
-        com: 'COM3',
-        baudRate: 9600
-      }
-    },
-    {
-      id: 'controller_1',
-      name: 'PLC控制器',
-      type: 'controller',
-      status: 'normal',
       connected: false,
       protocol: 'modbus_tcp',
       config: {

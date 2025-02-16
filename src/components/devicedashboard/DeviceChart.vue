@@ -14,6 +14,11 @@ const props = defineProps({
 const deviceControlStore = useDeviceControlStore()
 const chartInstance = ref(null)
 
+const getParamConfig = (paramKey) => {
+  const deviceConfig = DEVICE_PARAMS_CONFIG[props.device.type]
+  return deviceConfig.controlParams.find(p => p.key === paramKey)
+}
+
 const initChart = () => {
   const chartDom = document.getElementById(`deviceChart-${props.device.id}`)
   if (!chartDom) return
@@ -28,39 +33,96 @@ const updateChart = () => {
   const deviceConfig = DEVICE_PARAMS_CONFIG[props.device.type]
   const history = deviceControlStore.getDeviceHistory(props.device.id)
   
+  // 按秒聚合数据
+  const aggregatedData = {}
+  history.forEach(item => {
+    const second = Math.floor(item.timestamp / 1000) * 1000
+    if (!aggregatedData[second]) {
+      aggregatedData[second] = {
+        count: 0,
+        values: {}
+      }
+    }
+    
+    deviceConfig.chartParams.forEach(paramKey => {
+      if (!aggregatedData[second].values[paramKey]) {
+        aggregatedData[second].values[paramKey] = 0
+      }
+      aggregatedData[second].values[paramKey] += item.values[paramKey]
+    })
+    aggregatedData[second].count++
+  })
+
+  // 计算每秒平均值
+  const timePoints = Object.keys(aggregatedData).sort()
   const series = deviceConfig.chartParams.map(paramKey => {
-    const param = deviceConfig.controlParams.find(p => p.key === paramKey)
+    const paramConfig = getParamConfig(paramKey)
     return {
-      name: param.label,
+      name: `${paramConfig.label}(${paramConfig.unit})`,
       type: 'line',
       smooth: true,
-      data: history.map(item => [
-        item.timestamp,
-        item.values[paramKey]
+      data: timePoints.map(time => [
+        Number(time),
+        aggregatedData[time].values[paramKey] / aggregatedData[time].count
       ])
     }
   })
 
   const option = {
     title: {
-      text: '实时运行参数'
+      text: '运行参数图表'
     },
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: function(params) {
+        const time = new Date(params[0].value[0]).toLocaleTimeString()
+        let result = `${time}<br/>`
+        params.forEach(param => {
+          result += `${param.seriesName}: ${param.value[1].toFixed(2)}<br/>`
+        })
+        return result
+      }
     },
     legend: {
-      data: deviceConfig.chartParams.map(paramKey => 
-        deviceConfig.controlParams.find(p => p.key === paramKey).label
-      )
+      data: deviceConfig.chartParams.map(paramKey => {
+        const paramConfig = getParamConfig(paramKey)
+        return `${paramConfig.label}(${paramConfig.unit})`
+      })
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
     },
     xAxis: {
       type: 'time',
       boundaryGap: false
     },
-    yAxis: {
-      type: 'value'
-    },
-    series
+    yAxis: [
+      {
+        type: 'value',
+        name: '转速(RPM)',
+        splitLine: { show: true },
+        position: 'left',
+        axisLabel: {
+          formatter: '{value}'
+        }
+      },
+      {
+        type: 'value',
+        name: '其他参数',
+        splitLine: { show: false },
+        position: 'right',
+        axisLabel: {
+          formatter: '{value}'
+        }
+      }
+    ],
+    series: series.map(s => ({
+      ...s,
+      yAxisIndex: s.name.includes('转速') ? 0 : 1
+    }))
   }
 
   chartInstance.value.setOption(option)
