@@ -664,10 +664,10 @@ export const useDashboardStore = defineStore('dashboard', {
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     user: {
-      name: '',
-      email: '',
-      sender_email: '',
-      lastTime: (new Date()).toLocaleString(),
+      name: '测试用户',
+      email: 'test@example.com',
+      lastTime: new Date().toLocaleString(),
+      sender_email: 'test@example.com'
     },
     operationChoice: ['+', '-', '*', '/', '(', ')'],
     testConf: {

@@ -81,29 +81,6 @@ socket.on('data_from_device', data => {
   }
 })
 
-socket.on('device_status', data => {
-  // console.log(data)
-  dashboard.isFanConnected = data.FanDriver['连接状态']
-  dashboard.isFanRunning = data.FanDriver['运行状态']
-  dashboard.isFanBreakDown = data.FanDriver['故障']
-  dashboard.isTestConnected = data.TestDevice['连接状态']
-  dashboard.isTestRunning = data.TestDevice['运行状态']
-  dashboard.isTestBreakDown = data.TestDevice['故障']
-  dashboard.autoCollectStatus = data.auto_collect_status.status
-  dashboard.remainCount = data.auto_collect_status.remaining
-  dashboard.successCount = data.auto_collect_status.success
-  dashboard.failCount = data.auto_collect_status.fail
-})
-
-dashboard.initList()
-dashboard.updateDeviceState()
-settings.updateProtocol()
-settings.updateConf()
-settings.updateDefined()
-settings.updateUser()
-settings.updateSteady()
-db.updateMeta()
-
 
 </script>
 
