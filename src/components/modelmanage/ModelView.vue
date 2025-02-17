@@ -1,23 +1,4 @@
-<template>
-  <div class="model-container">
-    <el-row :gutter="20">
-      <el-col :span="12">
-        <ModelValidation 
-          :model-library="modelLibrary"
-          @update:model-library="modelLibrary = $event"
-          @select-model="handleModelSelect"
-        />
-      </el-col>
-      <el-col :span="12">
-        <ModelDeployment 
-          :selected-model="selectedModel"
-        />
-      </el-col>
-    </el-row>
-  </div>
-</template>
-
-<script lang="ts" setup>
+<script setup>
 import { ref } from 'vue'
 import ModelValidation from '@/components/modelmanage/ModelValidation.vue'
 import ModelDeployment from '@/components/modelmanage/ModelDeployment.vue'
@@ -43,18 +24,4 @@ const modelLibrary = ref([
     author: '李工'
   }
 ])
-
-const handleModelSelect = (model) => {
-  selectedModel.value = model
-}
-</script>
-
-<style scoped>
-.model-container {
-  padding: 20px;
-}
-
-:deep(.el-row) {
-  margin-bottom: 20px;
-}
-</style>
+</script> 
