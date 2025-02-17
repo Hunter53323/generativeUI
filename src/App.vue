@@ -7,7 +7,7 @@ import { ElMessageBox, ElMessage } from 'element-plus';
 import UserChangeBox from './components/UserChangeBox.vue';
 import { useRouter } from 'vue-router';
 import TopInfoBar from '@/components/common/TopInfoBar.vue'
-
+import logoUrl from '@/assets/logo.png'
 
 const router = useRouter()
 const global = useGlobalStore()
@@ -36,12 +36,9 @@ const db = useDBStore()
 //   })
 // }
 
-
-
 // onMounted(() => {
 //   changeUser()
 // })
-
 
 </script>
 
@@ -54,7 +51,7 @@ const db = useDBStore()
             <el-page-header :icon="null">
               <template #title>
                 <div class="logo">
-                  <img src="../static/logo.png" alt="logo" id="logo-img" />
+                  <!-- <img :src="logoUrl" alt="logo" id="logo-img" /> -->
                   国创中心生成式控制综合管控系统
                 </div>
               </template>
@@ -70,25 +67,41 @@ const db = useDBStore()
           </el-col>
         </el-row>
       </el-header>
-    </el-container>
-    <el-container direction="horizontal">
-      <el-aside width="150px">
-        <AsideMenu />
-      </el-aside>
       <el-container>
+        <el-aside width="200px">
+          <AsideMenu />
+        </el-aside>
         <el-main>
           <RouterView />
         </el-main>
       </el-container>
-
     </el-container>
   </div>
 </template>
 
 <style>
-.common-layout .el-aside {
-  color: var(--el-text-color-primary);
-  padding: 20px 0;
+.common-layout {
+  min-height: 100vh;
+}
+
+.el-container {
+  height: 100%;
+}
+
+.el-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
+  padding: 0 20px;
+}
+
+.el-aside {
+  background-color: #fff;
+  border-right: 1px solid #e6e6e6;
+}
+
+.el-main {
+  background-color: #f5f7fa;
+  padding: 20px;
 }
 
 .logo {
