@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   Document,
   Menu as IconMenu,
@@ -17,16 +18,26 @@ import {
 import { useDashboardStore } from '@/stores/global';
 
 const dashboard = useDashboardStore()
+const route = useRoute()
+const activeMenu = ref(route.path)
+
+// 监听路由变化，更新菜单选中状态
+watch(() => route.path, (newPath) => {
+  activeMenu.value = newPath
+})
 
 const judgeShow = () => {
   return dashboard.isFanRunning || dashboard.isTestRunning || dashboard.autoCollectStatus == 3 || dashboard.autoCollectStatus == 4 || dashboard.isFanConnected || dashboard.isTestConnected
 }
-
 </script>
 
 
 <template>
-  <el-menu default-active="/" class="el-menu-vertical-demo" :router="true">
+  <el-menu 
+    :default-active="activeMenu" 
+    class="el-menu-vertical-demo" 
+    :router="true"
+  >
     <!-- 首页 -->
     <el-menu-item index="/">
       <el-icon><home-filled /></el-icon>
@@ -34,7 +45,7 @@ const judgeShow = () => {
     </el-menu-item>
 
     <!-- 设备管理 -->
-    <el-sub-menu index="device">
+    <el-sub-menu index="/device">
       <template #title>
         <el-icon><monitor /></el-icon>
         <span>设备管理</span>
@@ -58,7 +69,7 @@ const judgeShow = () => {
     </el-sub-menu>
 
     <!-- 数据管理 -->
-    <el-sub-menu index="data">
+    <el-sub-menu index="/data">
       <template #title>
         <el-icon><data-line /></el-icon>
         <span>数据管理</span>
@@ -74,7 +85,7 @@ const judgeShow = () => {
     </el-sub-menu>
 
     <!-- 模型管理 -->
-    <el-sub-menu index="model">
+    <el-sub-menu index="/model">
       <template #title>
         <el-icon><collection /></el-icon>
         <span>模型管理</span>
@@ -116,5 +127,16 @@ const judgeShow = () => {
 
 :deep(.el-sub-menu__title) {
   padding-left: 20px !important;
+}
+
+/* 添加激活菜单项的样式 */
+.el-menu-item.is-active {
+  background-color: #ecf5ff !important;
+  color: #409EFF !important;
+}
+
+/* 添加子菜单展开时的样式 */
+.el-sub-menu.is-opened > .el-sub-menu__title {
+  color: #409EFF !important;
 }
 </style>

@@ -51,7 +51,7 @@ const db = useDBStore()
             <el-page-header :icon="null">
               <template #title>
                 <div class="logo">
-                  <!-- <img :src="logoUrl" alt="logo" id="logo-img" /> -->
+                  <img :src="logoUrl" alt="logo" id="logo-img" />
                   国创中心生成式控制综合管控系统
                 </div>
               </template>
