@@ -26,9 +26,6 @@ watch(() => route.path, (newPath) => {
   activeMenu.value = newPath
 })
 
-const judgeShow = () => {
-  return dashboard.isFanRunning || dashboard.isTestRunning || dashboard.autoCollectStatus == 3 || dashboard.autoCollectStatus == 4 || dashboard.isFanConnected || dashboard.isTestConnected
-}
 </script>
 
 
@@ -62,7 +59,7 @@ const judgeShow = () => {
         <el-icon><location /></el-icon>
         <span>边缘设备管理</span>
       </el-menu-item>
-      <el-menu-item index="/settings" :disabled="judgeShow()">
+      <el-menu-item index="/settings">
         <el-icon><setting /></el-icon>
         <span>协议配置</span>
       </el-menu-item>

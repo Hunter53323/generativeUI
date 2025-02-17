@@ -2,14 +2,11 @@
 import { reactive, ref, onMounted, h } from 'vue'
 import { ElTable, ElButton, ElSelect, ElOption } from 'element-plus'
 import DBPagination from '@/components/database/DBPagination.vue'
-import { useGlobalStore, useDashboardStore, useSettingsStore, useDBStore } from '@/stores/global'
+import { useDBStore } from '@/stores/global'
 import { useDeviceManagerStore } from '@/stores/deviceManager'
 import { Plus, Download, Delete } from '@element-plus/icons-vue'
 
-const global = useGlobalStore()
 const db = useDBStore()
-const dashboard = useDashboardStore()
-const settings = useSettingsStore()
 const deviceManager = useDeviceManagerStore()
 
 const multipleSelection = ref([])

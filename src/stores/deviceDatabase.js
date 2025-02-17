@@ -1,72 +1,149 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-export const useDeviceDatabaseStore = defineStore('deviceDatabase', () => {
-  const baseUrl = 'http://150.158.159.3:8888'
-  const devices = ref([])
-  const loading = ref(false)
+const API_BASE_URL = 'http://150.158.159.3:8888'
 
-  // 列出设备
-  const listDevices = async (params = {}) => {
-    loading.value = true
-    try {
-      const response = await fetch(`${baseUrl}/api/device/device/list`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(params)
-      })
-      const data = await response.json()
-      devices.value = Array.isArray(data) ? data : [data]
-      return data
-    } catch (error) {
-      console.error('获取设备列表失败:', error)
-      throw error
-    } finally {
-      loading.value = false
-    }
+// 通用请求配置
+const fetchConfig = {
+  mode: 'cors', // 启用跨域
+  credentials: 'include', // 包含凭证
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
+}
 
-  // 创建设备资源
-  const createDeviceResource = async (deviceInfo) => {
-    try {
-      const response = await fetch(`${baseUrl}/api/v1/device/resource/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ deviceResourceInfo: deviceInfo })
-      })
-      return await response.json()
-    } catch (error) {
-      console.error('创建设备资源失败:', error)
-      throw error
+export const useDeviceDatabaseStore = defineStore('deviceDatabase', {
+  state: () => ({
+    devices: [],
+    loading: false,
+    currentDevice: null,
+  }),
+
+  actions: {
+    // 获取设备列表
+    async fetchDevices() {
+      this.loading = true
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/device/device/list`, {
+          ...fetchConfig,
+          method: 'GET'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const data = await response.json()
+        console.log('API Response:', data)
+        
+        if (!data.devices) {
+          console.error('Invalid response format:', data)
+          throw new Error('Invalid response format')
+        }
+
+        this.devices = data.devices
+        ElMessage.success('设备列表获取成功')
+      } catch (error) {
+        console.error('获取设备列表失败:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response,
+          type: error.type
+        })
+        ElMessage.error(`设备列表获取失败: ${error.message}`)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 创建设备
+    async createDevice(deviceInfo) {
+      try {
+        console.log('Creating device with info:', deviceInfo)
+        const response = await fetch(`${API_BASE_URL}/api/device/device/create`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify(deviceInfo)
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('Create device response:', data)
+        
+        if (data.success) {
+          ElMessage.success('设备创建成功')
+          await this.fetchDevices()
+        } else {
+          throw new Error(data.message || '创建失败')
+        }
+      } catch (error) {
+        console.error('创建设备失败:', {
+          message: error.message,
+          stack: error.stack,
+          data: deviceInfo
+        })
+        ElMessage.error(`设备创建失败: ${error.message}`)
+        throw error
+      }
+    },
+
+    // 删除设备
+    async deleteDevice(deviceId) {
+      try {
+        console.log('Deleting device:', deviceId)
+        const response = await fetch(`${API_BASE_URL}/api/device/device/delete`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify({ deviceId })
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('Delete device response:', data)
+        
+        if (data.success) {
+          ElMessage.success('设备删除成功')
+          await this.fetchDevices()
+        } else {
+          throw new Error(data.message || '删除失败')
+        }
+      } catch (error) {
+        console.error('删除设备失败:', {
+          message: error.message,
+          stack: error.stack,
+          deviceId
+        })
+        ElMessage.error(`设备删除失败: ${error.message}`)
+        throw error
+      }
+    },
+
+    // 获取设备类型对应的标签类型
+    getDeviceTagType(type) {
+      const typeMap = {
+        'edge': 'info',
+        'pc': 'success',
+        'fan': 'warning',
+        'motor': 'danger'
+      }
+      return typeMap[type] || ''
+    },
+
+    // 获取设备状态对应的标签类型
+    getStatusTagType(status) {
+      const statusMap = {
+        'ready': 'success',
+        'offline': 'info',
+        'error': 'danger'
+      }
+      return statusMap[status] || 'warning'
     }
-  }
-
-  // 删除设备资源
-  const deleteDeviceResource = async (deviceUID) => {
-    try {
-      const response = await fetch(`${baseUrl}/api/v1/device/resource/delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ deviceUID })
-      })
-      return await response.json()
-    } catch (error) {
-      console.error('删除设备资源失败:', error)
-      throw error
-    }
-  }
-
-  return {
-    devices,
-    loading,
-    listDevices,
-    createDeviceResource,
-    deleteDeviceResource
   }
 }) 
