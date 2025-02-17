@@ -11,7 +11,8 @@ import {
   HomeFilled,
   Monitor,
   DataLine,
-  Collection
+  Collection,
+  Folder
 } from '@element-plus/icons-vue'
 import { useDashboardStore } from '@/stores/global';
 
@@ -65,6 +66,10 @@ const judgeShow = () => {
       <el-menu-item index="/database">
         <el-icon><icon-menu /></el-icon>
         <span>数据库</span>
+      </el-menu-item>
+      <el-menu-item index="/device-database">
+        <el-icon><folder /></el-icon>
+        <span>设备数据库</span>
       </el-menu-item>
     </el-sub-menu>
 

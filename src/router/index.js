@@ -8,6 +8,7 @@ import DataCleaningView from '../views/DataCleaningView.vue'
 import HomeView from '../views/HomeView.vue'
 import DeviceDashboardView from '../views/DeviceDashboardView.vue'
 import EdgeDevicesView from '../views/EdgeDevicesView.vue'
+import DeviceDatabaseView from '../views/DeviceDatabaseView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +57,11 @@ const router = createRouter({
       path: '/edge-devices',
       name: 'edge-devices',
       component: EdgeDevicesView
+    },
+    {
+      path: '/device-database',
+      name: 'device-database',
+      component: DeviceDatabaseView
     }
   ]
 })
