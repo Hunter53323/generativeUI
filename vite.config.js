@@ -39,6 +39,11 @@ export default defineConfig({
             }
           })
         }
+      },
+      '/devicemanager': {
+        target: 'http://150.158.159.3:8888',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/devicemanager/, '')
       }
     }
   }

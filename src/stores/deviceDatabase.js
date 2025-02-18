@@ -2,18 +2,19 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const API_BASE_URL = 'http://150.158.159.3:8888'
+const API_BASE_URL = '/devicemanager'
+// const API_BASE_URL = 'http://150.158.159.3:8888'
+// const API_BASE_URL = 'http://192.168.3.164:8888'
 
 // 通用请求配置
 const fetchConfig = {
-  mode: 'cors', // 启用跨域
-  credentials: 'include', // 包含凭证
+  mode: 'cors',
+  credentials: 'omit',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 }
-
 export const useDeviceDatabaseStore = defineStore('deviceDatabase', {
   state: () => ({
     devices: [],
@@ -28,7 +29,11 @@ export const useDeviceDatabaseStore = defineStore('deviceDatabase', {
       try {
         const response = await fetch(`${API_BASE_URL}/api/device/device/list`, {
           ...fetchConfig,
-          method: 'GET'
+          method: 'POST',
+          headers: {
+            ...fetchConfig.headers,
+            'Access-Control-Allow-Origin': '*',
+          }
         })
         
         if (!response.ok) {
@@ -45,12 +50,7 @@ export const useDeviceDatabaseStore = defineStore('deviceDatabase', {
         this.devices = data.devices
         ElMessage.success('设备列表获取成功')
       } catch (error) {
-        console.error('获取设备列表失败:', {
-          message: error.message,
-          stack: error.stack,
-          response: error.response,
-          type: error.type
-        })
+        console.error('获取设备列表失败:', error)
         ElMessage.error(`设备列表获取失败: ${error.message}`)
       } finally {
         this.loading = false
