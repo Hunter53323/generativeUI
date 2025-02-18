@@ -1,115 +1,112 @@
 <script setup>
 import { ref, reactive } from 'vue'
+import { useDeviceDatabaseStore } from '@/stores/deviceDatabase'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({
-  visible: Boolean
+  modelValue: Boolean
 })
 
-const emit = defineEmits(['update:visible', 'created'])
+const emit = defineEmits(['update:modelValue', 'success'])
 
-const formData = reactive({
-  IP: '',
+const deviceDB = useDeviceDatabaseStore()
+const formRef = ref(null)
+const loading = ref(false)
+
+const form = reactive({
+  ip: '',
   hostname: '',
   type: '',
-  OS: '',
+  os: '',
   protocol: [],
-  CPU: { amount: 0, type: '', unit: '' },
-  GPU: { amount: 0, type: '', unit: '' },
-  disk: { amount: 0, type: '', unit: '' },
-  mem: { amount: 0, type: '', unit: '' }
+  deviceDesc: ''
 })
 
-const deviceTypes = [
-  { label: '风机', value: 'fan' },
-  { label: '电机', value: 'motor' },
-  { label: '虚拟设备', value: 'virtual' },
-  { label: 'PC', value: 'pc' },
-  { label: '边缘设备', value: 'edge' }
-]
-
-const protocolOptions = [
-  { label: 'Modbus', value: 'modbus' },
-  { label: 'UART', value: 'uart' }
-]
-
-const handleClose = () => {
-  emit('update:visible', false)
+const rules = {
+  ip: [{ required: true, message: '请输入IP地址', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择设备类型', trigger: 'change' }],
+  protocol: [{ required: true, message: '请选择至少一个协议', trigger: 'change' }]
 }
 
-const handleSubmit = () => {
-  emit('created', formData)
-  handleClose()
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  
+  try {
+    await formRef.value.validate()
+    loading.value = true
+    
+    await deviceDB.createDeviceResource({
+      ip: form.ip,
+      hostname: form.hostname,
+      type: form.type,
+      os: form.os,
+      protocol: form.protocol
+    })
+    
+    ElMessage.success('设备添加成功')
+    emit('success')
+    emit('update:modelValue', false)
+  } catch (error) {
+    if (error.message) {
+      ElMessage.error(error.message)
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
-  <el-dialog 
-    title="添加设备" 
-    :visible="visible" 
-    @close="handleClose"
+  <el-dialog
+    :modelValue="modelValue"
+    @update:modelValue="$emit('update:modelValue', $event)"
+    title="添加设备"
     width="600px"
   >
-    <el-form :model="formData" label-width="100px">
-      <el-form-item label="IP地址" required>
-        <el-input v-model="formData.IP" placeholder="请输入IP地址" />
+    <el-form :model="form" label-width="120px" :rules="rules" ref="formRef">
+      <el-form-item label="IP地址" prop="ip">
+        <el-input v-model="form.ip" placeholder="请输入IP地址" />
       </el-form-item>
       
-      <el-form-item label="主机名">
-        <el-input v-model="formData.hostname" placeholder="请输入主机名" />
+      <el-form-item label="主机名" prop="hostname">
+        <el-input v-model="form.hostname" placeholder="请输入主机名" />
       </el-form-item>
       
-      <el-form-item label="设备类型" required>
-        <el-select v-model="formData.type" placeholder="请选择设备类型">
-          <el-option 
-            v-for="item in deviceTypes"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
+      <el-form-item label="设备类型" prop="type">
+        <el-select v-model="form.type" placeholder="请选择设备类型">
+          <el-option label="风机" value="fan" />
+          <el-option label="电机" value="motor" />
+          <el-option label="虚拟设备" value="virtual" />
+          <el-option label="PC" value="pc" />
+          <el-option label="边缘设备" value="edge" />
         </el-select>
       </el-form-item>
       
-      <el-form-item label="操作系统">
-        <el-input v-model="formData.OS" placeholder="请输入操作系统" />
+      <el-form-item label="操作系统" prop="os">
+        <el-input v-model="form.os" placeholder="请输入操作系统" />
       </el-form-item>
       
-      <el-form-item label="通信协议" required>
-        <el-select 
-          v-model="formData.protocol" 
-          multiple 
-          placeholder="请选择通信协议"
-        >
-          <el-option
-            v-for="item in protocolOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
+      <el-form-item label="协议" prop="protocol">
+        <el-select v-model="form.protocol" multiple placeholder="请选择协议">
+          <el-option label="Modbus" value="modbus" />
+          <el-option label="UART" value="uart" />
         </el-select>
       </el-form-item>
-      
-      <el-form-item label="CPU">
-        <el-row :gutter="10">
-          <el-col :span="8">
-            <el-input-number v-model="formData.CPU.amount" placeholder="数量" />
-          </el-col>
-          <el-col :span="8">
-            <el-input v-model="formData.CPU.type" placeholder="类型" />
-          </el-col>
-          <el-col :span="8">
-            <el-input v-model="formData.CPU.unit" placeholder="单位" />
-          </el-col>
-        </el-row>
+
+      <el-form-item label="设备描述" prop="deviceDesc">
+        <el-input 
+          v-model="form.deviceDesc" 
+          type="textarea" 
+          placeholder="请输入设备描述"
+        />
       </el-form-item>
-      
-      <!-- 类似的表单项用于 GPU、内存和磁盘 -->
-      
     </el-form>
-    
+
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleSubmit">确定</el-button>
+      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button type="primary" @click="handleSubmit" :loading="loading">
+        确定
+      </el-button>
     </template>
   </el-dialog>
 </template> 

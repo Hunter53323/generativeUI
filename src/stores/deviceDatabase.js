@@ -144,6 +144,131 @@ export const useDeviceDatabaseStore = defineStore('deviceDatabase', {
         'error': 'danger'
       }
       return statusMap[status] || 'warning'
+    },
+
+    // 创建设备资源
+    async createDeviceResource(deviceInfo) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/device/resource/create`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify({
+            deviceResourceInfo: deviceInfo
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return data
+      } catch (error) {
+        console.error('创建设备资源失败:', error)
+        throw error
+      }
+    },
+
+    // 删除设备资源
+    async deleteDeviceResource(deviceUID) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/device/resource/delete`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify({
+            deviceUID: deviceUID  // 确保参数名称正确
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('Delete response:', data)
+        return data
+      } catch (error) {
+        console.error('删除设备资源失败:', error)
+        throw error
+      }
+    },
+
+    // 创建设备帧
+    async createDeviceFrame(frameData) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/device/frame/create`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify(frameData)
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return data
+      } catch (error) {
+        console.error('创建设备帧失败:', error)
+        throw error
+      }
+    },
+
+    // 删除设备帧
+    async deleteDeviceFrame(deviceUID, frameType) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/device/frame/delete`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify({
+            deviceUID,
+            frameType
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return data
+      } catch (error) {
+        console.error('删除设备帧失败:', error)
+        throw error
+      }
+    },
+
+    // 获取设备详情
+    async fetchDeviceDetail(deviceUID) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/device/device/list`, {
+          ...fetchConfig,
+          method: 'POST',
+          body: JSON.stringify({
+            deviceUID: deviceUID
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (data.devices && data.devices.length > 0) {
+          // 更新设备列表中的详细信息
+          const index = this.devices.findIndex(d => d.deviceMeta.deviceUID === deviceUID)
+          if (index !== -1) {
+            this.devices[index] = data.devices[0]
+          }
+          return data.devices[0]
+        }
+        throw new Error('未找到设备详情')
+      } catch (error) {
+        console.error('获取设备详情失败:', error)
+        ElMessage.error('获取设备详情失败')
+        throw error
+      }
     }
   }
 }) 

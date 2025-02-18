@@ -4,9 +4,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useDeviceDatabaseStore } from '@/stores/deviceDatabase'
 import AddDeviceDialog from '@/components/devicedatabase/AddDeviceDialog.vue'
 import { Plus } from '@element-plus/icons-vue'
+import DeviceDetailDrawer from '@/components/devicedatabase/DeviceDetailDrawer.vue'
 
 const deviceDB = useDeviceDatabaseStore()
 const showDialog = ref(false)
+const showDetail = ref(false)
+const currentDeviceId = ref('')
 
 const tableColumns = [
   { prop: 'deviceUID', label: '设备ID', width: '180' },
@@ -78,12 +81,28 @@ const handleDelete = async (device) => {
         type: 'warning'
       }
     )
-    // TODO: 实现删除功能
-    console.log('删除设备:', device)
+    await deviceDB.deleteDeviceResource(device.deviceMeta.deviceUID)
+    ElMessage.success('设备删除成功')
+    await loadData()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除失败:', error)
+      ElMessage.error('删除设备失败')
     }
+  }
+}
+
+// 处理行点击
+const handleRowClick = () => {}
+
+// 添加显示详情方法
+const handleShowDetail = async (row) => {
+  currentDeviceId.value = row.deviceMeta.deviceUID
+  try {
+    await deviceDB.fetchDeviceDetail(row.deviceMeta.deviceUID)
+    showDetail.value = true
+  } catch (error) {
+    console.error('获取设备详情失败:', error)
   }
 }
 </script>
@@ -104,14 +123,12 @@ const handleDelete = async (device) => {
       style="width: 100%"
     >
       <!-- 基本信息 -->
-      <el-table-column label="基本信息" min-width="200">
+      <el-table-column label="基本信息" min-width="300">
         <template #default="{ row }">
           <div class="device-info">
             <div class="device-name">
               <span class="label">设备ID:</span>
-              <el-tooltip :content="row.deviceMeta.deviceUID" placement="top">
-                <span class="value">{{ row.deviceMeta.deviceUID.slice(0, 8) }}...</span>
-              </el-tooltip>
+              <span class="value">{{ row.deviceMeta.deviceUID }}</span>
             </div>
             <div class="device-desc">
               <span class="label">描述:</span>
@@ -172,11 +189,29 @@ const handleDelete = async (device) => {
       </el-table-column>
 
       <!-- 操作 -->
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
           <el-button-group>
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button 
+              size="small" 
+              type="primary"
+              @click.stop="handleShowDetail(row)"
+            >
+              详情
+            </el-button>
+            <el-button 
+              size="small" 
+              @click.stop="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button 
+              size="small"
+              type="danger"
+              @click.stop="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </el-button-group>
         </template>
       </el-table-column>
@@ -185,6 +220,12 @@ const handleDelete = async (device) => {
     <AddDeviceDialog
       v-model="showDialog"
       @success="handleAddSuccess"
+    />
+
+    <!-- 添加设备详情抽屉 -->
+    <DeviceDetailDrawer
+      v-model="showDetail"
+      :device-id="currentDeviceId"
     />
   </div>
 </template>
@@ -234,5 +275,14 @@ const handleDelete = async (device) => {
 
 :deep(.el-table__row:hover) {
   background-color: #ecf5ff !important;
+}
+
+:deep(.el-button-group) {
+  display: flex;
+  gap: 4px;
+}
+
+:deep(.el-button-group .el-button) {
+  margin-left: 0 !important;
 }
 </style> 
