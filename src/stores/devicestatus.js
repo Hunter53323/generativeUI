@@ -6,14 +6,26 @@ export const useDeviceStore = defineStore('device', () => {
   const devices = ref([
     {
       id: 'stepper_motor_1',
-      name: '步进电机',
+      name: '步进电机1',
       type: 'stepper_motor',
       status: 'normal',
       connected: false,
       protocol: 'http',
       config: {
-        ip: '192.168.3.72',
-        port: '8080'
+        ip: '192.168.3.71',
+        port: '8000'
+      }
+    },
+    {
+      id: 'stepper_motor_2',
+      name: '步进电机2',
+      type: 'stepper_motor',
+      status: 'normal',
+      connected: false,
+      protocol: 'http',
+      config: {
+        ip: '192.168.3.71',
+        port: '8000'
       }
     },
     {

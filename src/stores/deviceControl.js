@@ -167,6 +167,7 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
       .then(data => {
         if (data.values) {
           const newParams = {}
+          // 根据stepMotorServer.py的API响应格式解析数据
           data.values.forEach(item => {
             switch(item.name) {
               case 'transmitter':
@@ -180,10 +181,26 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
                 break
             }
           })
+          
           deviceParams.value[deviceId] = {
             ...deviceParams.value[deviceId],
             ...newParams
           }
+
+          // 更新历史数据
+          if (!deviceHistory.value[deviceId]) {
+            deviceHistory.value[deviceId] = []
+          }
+          deviceHistory.value[deviceId].push({
+            timestamp,
+            values: { ...deviceParams.value[deviceId] }
+          })
+
+          // 只保留最近5分钟的数据
+          const fiveMinutesAgo = timestamp - 5 * 60 * 1000
+          deviceHistory.value[deviceId] = deviceHistory.value[deviceId].filter(
+            item => item.timestamp > fiveMinutesAgo
+          )
         }
       })
       .catch(error => {
@@ -193,63 +210,6 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
       return
     }
 
-    if (deviceType === 'dc_motor') {
-      fetch(`${DC_MOTOR_API_URL}/api/v1/control/getValue`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          deviceUID: deviceId
-        })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok')
-        return response.json()
-      })
-      .then(data => {
-        if (data.values) {
-          const newParams = {}
-          data.values.forEach(item => {
-            switch(item.name) {
-              case 'pwm':
-                newParams.pwm = Number(item.value)
-                break
-              case 'voltage':
-                newParams.voltage = Number(item.value)
-                break
-              case 'current_u':
-                newParams.current_u = Number(item.value)
-                break
-              case 'current_v':
-                newParams.current_v = Number(item.value)
-                break
-              case 'current_w':
-                newParams.current_w = Number(item.value)
-                break
-              case 'current_bus':
-                newParams.current_bus = Number(item.value)
-                break
-              case 'temperature':
-                newParams.temperature = Number(item.value)
-                break
-            }
-          })
-          deviceParams.value[deviceId] = {
-            ...deviceParams.value[deviceId],
-            ...newParams
-          }
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching dc motor data:', error)
-        deviceStatus.value[deviceId] = 'error'
-      })
-      return
-    }
-
-    // 其他设备类型的原有逻辑
-    
     // 获取目标转速和电压
     const targetSpeed = currentParams.targetSpeed
     const targetVoltage = currentParams.targetVoltage
@@ -283,12 +243,6 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
     // 根据设备类型更新其他参数
     const speedRatio = currentParams.speed / DEVICE_DEFAULTS[deviceType].speed
     switch (deviceType) {
-      case 'stepper_motor': {
-        currentParams.current = Number((speedRatio * DEVICE_DEFAULTS[deviceType].current * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
-        currentParams.power = Number((currentParams.current * currentParams.voltage / 1000).toFixed(2))
-        currentParams.position = Number((speedRatio * 360 * (1 + (Math.random() - 0.5) * 0.02)).toFixed(2))
-        break
-      }
       case 'async_motor': {
         currentParams.current = Number((speedRatio * DEVICE_DEFAULTS[deviceType].current * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
         currentParams.power = Number((currentParams.current * currentParams.voltage * 1.732 * 0.85 / 1000).toFixed(2))
@@ -319,63 +273,6 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
         currentParams.pressure = Number((speedRatio * DEVICE_DEFAULTS[deviceType].pressure * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
         currentParams.temperature = Number((speedRatio * DEVICE_DEFAULTS[deviceType].temperature * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
         currentParams.power = Number((Math.pow(speedRatio, 3) * DEVICE_DEFAULTS[deviceType].power * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
-        break
-      }
-      case 'dc_motor': {
-        // 使用完整的 API URL
-        fetch(`${DC_MOTOR_API_URL}/api/v1/control/getValue`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            deviceUID: deviceId
-          })
-        })
-        .then(response => {
-          if (!response.ok) throw new Error('Network response was not ok')
-          return response.json()
-        })
-        .then(data => {
-          if (data.values) {
-            const newParams = {}
-            // 根据 stmServer.py 中的数据格式解析返回值
-            data.values.forEach(item => {
-              switch(item.name) {
-                case 'pwm':
-                  newParams.pwm = Number(item.value)
-                  break
-                case 'voltage':
-                  newParams.voltage = Number(item.value)
-                  break
-                case 'current_u':
-                  newParams.current_u = Number(item.value)
-                  break
-                case 'current_v':
-                  newParams.current_v = Number(item.value)
-                  break
-                case 'current_w':
-                  newParams.current_w = Number(item.value)
-                  break
-                case 'current_bus':
-                  newParams.current_bus = Number(item.value)
-                  break
-                case 'temperature':
-                  newParams.temperature = Number(item.value)
-                  break
-              }
-            })
-            deviceParams.value[deviceId] = {
-              ...deviceParams.value[deviceId],
-              ...newParams
-            }
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching device data:', error)
-          // 如果连续失败多次，可以考虑停止设备
-          deviceStatus.value[deviceId] = 'error'
-        })
         break
       }
     }
@@ -446,6 +343,72 @@ export const useDeviceControlStore = defineStore('deviceControl', () => {
           rateInterval: setInterval(() => {
             updateDeviceRate(deviceId)
           }, 1000)  // 每秒更新一次频率
+        }
+      })
+      .catch(error => {
+        console.error('Error starting device:', error)
+        deviceStatus.value[deviceId] = 'error'
+      })
+      return
+    }
+    
+    if (deviceType === 'stepper_motor') {
+      // 先检查设备健康状态
+      fetch(`${STEPPER_MOTOR_API_URL}/api/v1/health`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          deviceUID: deviceId
+        })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok')
+        return response.json()
+      })
+      .then(data => {
+        if (data.status === 'error') {
+          throw new Error('Device health check failed')
+        }
+        
+        // 如果健康检查通过，发送启动命令
+        return fetch(`${STEPPER_MOTOR_API_URL}/api/v1/control/startControl`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            deviceUID: deviceId
+          })
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.result === 'success') {
+          deviceStatus.value[deviceId] = 'running'
+          // 初始化参数
+          deviceParams.value[deviceId] = {
+            ...DEVICE_DEFAULTS[deviceType]
+          }
+          
+          // 启动数据更新和频率更新的定时器
+          updateDeviceRate(deviceId)
+          if (updateIntervals.value[deviceId]) {
+            clearInterval(updateIntervals.value[deviceId].dataInterval)
+            clearInterval(updateIntervals.value[deviceId].rateInterval)
+          }
+          
+          updateIntervals.value[deviceId] = {
+            dataInterval: setInterval(() => {
+              updateDeviceData(deviceId, deviceType)
+            }, 100),  // 每100ms更新一次数据
+            rateInterval: setInterval(() => {
+              updateDeviceRate(deviceId)
+            }, 1000)  // 每秒更新一次频率
+          }
+        } else {
+          throw new Error('Failed to start device')
         }
       })
       .catch(error => {
