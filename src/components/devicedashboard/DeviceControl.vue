@@ -270,16 +270,20 @@ const handlePwmSubmit = () => {
   ElMessage.success('PWM设置已下发')
 }
 
-const handleTransmitterSubmit = () => {
+const handleDutyCycleSubmit = () => {
   if (props.device.type === 'stepper_motor') {
     const transmitter = Number(transmitterInput.value)
-    if (isNaN(transmitter) || transmitter < 0 || transmitter > 100) {
+    const receiver = Number(receiverInput.value)
+    
+    // 验证两个输入值
+    if (isNaN(transmitter) || transmitter < 0 || transmitter > 100 ||
+        isNaN(receiver) || receiver < 0 || receiver > 100) {
       ElMessage.warning('请输入0-100之间的占空比值')
       return
     }
 
     const loading = ElMessage({
-      message: '正在设置发送机占空比...',
+      message: '正在设置占空比...',
       duration: 0
     })
 
@@ -295,52 +299,7 @@ const handleTransmitterSubmit = () => {
             index: 'transmitter',
             name: 'transmitter',
             value: transmitter.toString()
-          }
-        ]
-      })
-    })
-    .then(response => {
-      if (!response.ok) throw new Error('Network response was not ok')
-      return response.json()
-    })
-    .then(data => {
-      loading.close()
-      if (data.result === 'success') {
-        deviceControlStore.updateDeviceParam(props.device.id, 'transmitter', transmitter)
-        ElMessage.success('发送机占空比设置成功')
-      } else {
-        ElMessage.error('发送机占空比设置失败：' + (data.message || '请检查设备状态'))
-      }
-    })
-    .catch(error => {
-      loading.close()
-      console.error('Error setting transmitter:', error)
-      ElMessage.error('发送机占空比设置失败：请检查网络连接')
-    })
-  }
-}
-
-const handleReceiverSubmit = () => {
-  if (props.device.type === 'stepper_motor') {
-    const receiver = Number(receiverInput.value)
-    if (isNaN(receiver) || receiver < 0 || receiver > 100) {
-      ElMessage.warning('请输入0-100之间的占空比值')
-      return
-    }
-
-    const loading = ElMessage({
-      message: '正在设置接收机占空比...',
-      duration: 0
-    })
-
-    fetch(`${STEPPER_MOTOR_API_URL}/api/v1/control/setValue`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        deviceUID: props.device.id,
-        values: [
+          },
           {
             index: 'receiver',
             name: 'receiver',
@@ -356,16 +315,17 @@ const handleReceiverSubmit = () => {
     .then(data => {
       loading.close()
       if (data.result === 'success') {
+        deviceControlStore.updateDeviceParam(props.device.id, 'transmitter', transmitter)
         deviceControlStore.updateDeviceParam(props.device.id, 'receiver', receiver)
-        ElMessage.success('接收机占空比设置成功')
+        ElMessage.success('占空比设置成功')
       } else {
-        ElMessage.error('接收机占空比设置失败：' + (data.message || '请检查设备状态'))
+        ElMessage.error('占空比设置失败：' + (data.message || '请检查设备状态'))
       }
     })
     .catch(error => {
       loading.close()
-      console.error('Error setting receiver:', error)
-      ElMessage.error('接收机占空比设置失败：请检查网络连接')
+      console.error('Error setting duty cycle:', error)
+      ElMessage.error('占空比设置失败：请检查网络连接')
     })
   }
 }
@@ -396,45 +356,40 @@ const updateRate = computed(() => deviceControlStore.getDeviceUpdateRate(props.d
     
     <div class="params-display">
       <template v-if="device.type === 'stepper_motor'">
-        <div class="param-item">
-          <span class="param-label">发送机占空比设置：</span>
-          <div class="speed-input-group">
-            <el-input
-              v-model="transmitterInput"
-              :disabled="!isRunning"
-              placeholder="0-100"
-              style="width: 180px"
-            >
-              <template #append>%</template>
-            </el-input>
-            <el-button 
-              type="primary" 
-              :disabled="!isRunning"
-              @click="handleTransmitterSubmit"
-            >
-              下发
-            </el-button>
+        <div class="param-group">
+          <div class="param-item">
+            <span class="param-label">发送机占空比设置：</span>
+            <div class="speed-input-group">
+              <el-input
+                v-model="transmitterInput"
+                :disabled="!isRunning"
+                placeholder="0-100"
+                style="width: 180px"
+              >
+                <template #append>%</template>
+              </el-input>
+            </div>
           </div>
-        </div>
-        <div class="param-item">
-          <span class="param-label">接收机占空比设置：</span>
-          <div class="speed-input-group">
-            <el-input
-              v-model="receiverInput"
-              :disabled="!isRunning"
-              placeholder="0-100"
-              style="width: 180px"
-            >
-              <template #append>%</template>
-            </el-input>
-            <el-button 
-              type="primary" 
-              :disabled="!isRunning"
-              @click="handleReceiverSubmit"
-            >
-              下发
-            </el-button>
+          <div class="param-item">
+            <span class="param-label">接收机占空比设置：</span>
+            <div class="speed-input-group">
+              <el-input
+                v-model="receiverInput"
+                :disabled="!isRunning"
+                placeholder="0-100"
+                style="width: 180px"
+              >
+                <template #append>%</template>
+              </el-input>
+            </div>
           </div>
+          <el-button 
+            type="primary" 
+            :disabled="!isRunning"
+            @click="handleDutyCycleSubmit"
+          >
+            下发占空比
+          </el-button>
         </div>
         <div class="param-item">
           <span class="param-label">当前发送机占空比：</span>
@@ -713,5 +668,12 @@ const updateRate = computed(() => deviceControlStore.getDeviceUpdateRate(props.d
   padding: 4px 8px;
   border-radius: 4px;
   font-family: monospace;
+}
+
+.param-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 </style> 
