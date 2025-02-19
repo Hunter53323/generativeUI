@@ -13,7 +13,8 @@ import {
   Monitor,
   DataLine,
   Collection,
-  Folder
+  Folder,
+  Connection
 } from '@element-plus/icons-vue'
 import { useDashboardStore } from '@/stores/global';
 
@@ -58,6 +59,10 @@ watch(() => route.path, (newPath) => {
       <el-menu-item index="/edge-devices">
         <el-icon><location /></el-icon>
         <span>边缘设备管理</span>
+      </el-menu-item>
+      <el-menu-item index="/edge-backend">
+        <el-icon><Connection /></el-icon>
+        <span>边缘设备后台</span>
       </el-menu-item>
       <el-menu-item index="/settings">
         <el-icon><setting /></el-icon>

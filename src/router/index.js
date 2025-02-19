@@ -72,6 +72,11 @@ const router = createRouter({
         title: '模型训练',
         icon: 'Model'
       }
+    },
+    {
+      path: '/edge-backend',
+      name: 'edge-backend',
+      component: () => import('@/views/EdgeBackendView.vue')
     }
   ]
 })
