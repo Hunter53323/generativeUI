@@ -1,11 +1,12 @@
 import { ref } from 'vue'
+import { defineStore } from 'pinia'
 
 // 模型库数据
 export const modelLibrary = ref([
   {
     id: 1,
     name: '生成式电机控制模型 V1.0',
-    type: 'control',
+    type: 'generative',
     description: '基于生成式AI的电机控制模型',
     uploadTime: '2024-01-15 14:30:00',
     size: '2.5MB',
@@ -14,7 +15,7 @@ export const modelLibrary = ref([
   {
     id: 2,
     name: '生成式电机控制模型 V2.0',
-    type: 'control',
+    type: 'generative',
     description: '改进版生成式电机控制模型',
     uploadTime: '2024-01-16 09:15:00',
     size: '3.1MB',
@@ -28,9 +29,9 @@ export const deployedModels = ref([
     id: 1,
     originalName: '生成式电机控制模型 V1.0',
     name: '生成式电机控制模型 V1.0_20240115143000',
-    type: 'control',
+    type: 'generative',
     format: 'iec61499',
-    server: 'server1',
+    server: 'deploy-server-1',
     deployTime: '2024-01-15 14:30:00',
     downloadUrl: '/models/control_61499.fbt'
   }
@@ -58,9 +59,9 @@ export const validationState = ref({
 
 // 常量定义
 export const modelTypes = [
-  { value: 'control', label: '控制模型' },
-  { value: 'diagnostic', label: '故障诊断' },
-  { value: 'maintenance', label: '预测性维护' }
+  { value: 'generative', label: '生成式模型' },
+  { value: 'neural_network', label: '神经网络模型' },
+  { value: 'reinforcement', label: '强化学习模型' }
 ]
 
 export const serverOptions = [
@@ -81,13 +82,17 @@ export const getRandomFloat = (base, range) => {
 
 // 添加新模型
 export const addModel = (model) => {
-  modelLibrary.value.push({
-    id: Date.now(),
-    ...model,
-    uploadTime: new Date().toLocaleString(),
-    size: '2.8MB',
-    author: '当前用户'
-  })
+  // 检查是否已存在同名模型
+  const existingModel = modelLibrary.value.find(m => m.name === model.name)
+  if (existingModel) {
+    // 如果存在同名模型，在名称后添加版本号
+    const version = modelLibrary.value
+      .filter(m => m.name.startsWith(model.name))
+      .length + 1
+    model.name = `${model.name} V${version}.0`
+  }
+  
+  modelLibrary.value.push(model)
 }
 
 // 删除模型
@@ -222,4 +227,12 @@ export const cancelPerformanceEvaluation = () => {
   performanceState.value.isEvaluating = false
   performanceState.value.progress = 0
   performanceState.value.timer = null
-} 
+}
+
+export const useModelManageStore = defineStore('modelManage', () => {
+  return {
+    modelLibrary,
+    addModel,
+    // ... 其他返回值 ...
+  }
+}) 

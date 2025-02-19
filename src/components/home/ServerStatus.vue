@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Cpu, Plus, Setting, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useServerManagerStore } from '@/stores/serverManager'
 
 const props = defineProps({
   servers: {
@@ -37,13 +38,55 @@ const statusOptions = [
   { label: '摊销中', value: 'deploying' }
 ]
 
+const serverManager = useServerManagerStore()
+const showAddDialog = ref(false)
+const formRef = ref(null)
+
+const serverForm = ref({
+  name: '',
+  type: '',
+  ip: '',
+  port: ''
+})
+
+const rules = {
+  name: [
+    { required: true, message: '请输入服务器名称', trigger: 'blur' }
+  ],
+  type: [
+    { required: true, message: '请选择服务器类型', trigger: 'change' }
+  ],
+  ip: [
+    { required: true, message: '请输入IP地址', trigger: 'blur' }
+  ],
+  port: [
+    { required: true, message: '请输入端口号', trigger: 'blur' }
+  ]
+}
+
 const getStatusType = (status) => {
-  const types = {
-    idle: 'info',
-    training: 'warning',
-    deploying: 'success'
+  const statusMap = {
+    'online': 'success',
+    'offline': 'danger',
+    'busy': 'warning',
+    'maintenance': 'info'
   }
-  return types[status] || 'info'
+  return statusMap[status]
+}
+
+const getServerTypeTag = (type) => {
+  const typeMap = {
+    'gpu': 'danger',
+    'cpu': 'primary',
+    'tpu': 'warning'
+  }
+  return typeMap[type]
+}
+
+const getResourceStatus = (value) => {
+  if (value >= 90) return 'exception'
+  if (value >= 70) return 'warning'
+  return ''
 }
 
 const getStatusText = (status) => {
@@ -104,33 +147,29 @@ const startLoadMonitoring = (server) => {
   }, 3000)
 }
 
-const handleAddServer = () => {
-  if (!newServer.value.name || !newServer.value.ip || !newServer.value.port) {
-    ElMessage.warning('请填写完整信息')
-    return
-  }
-
-  const server = {
-    ...newServer.value,
-    load: '0%',
-    memory: '0/32GB'
-  }
+const handleAddServer = async () => {
+  if (!formRef.value) return
   
-  localServers.value.push(server)
-  startLoadMonitoring(server) // 开始负载监控
-  emit('update:servers', localServers.value)
-  addServerDialogVisible.value = false
-  
-  newServer.value = {
-    name: '',
-    type: 'training',
-    status: 'idle',
-    ip: '',
-    port: '',
-    load: '0%',
-    memory: '0/32GB'
+  try {
+    await formRef.value.validate()
+    const newServer = {
+      id: Date.now().toString(),
+      ...serverForm.value
+    }
+    
+    if (serverManager.addServer(newServer)) {
+      ElMessage.success('添加服务器成功')
+      showAddDialog.value = false
+      serverForm.value = {
+        name: '',
+        type: '',
+        ip: '',
+        port: ''
+      }
+    }
+  } catch (error) {
+    console.error('添加服务器失败:', error)
   }
-  ElMessage.success('服务器添加成功')
 }
 
 const handleEditServer = (server) => {
@@ -169,6 +208,11 @@ const handleDeleteServer = (server) => {
   }).catch(() => {})
 }
 
+const handleWorkStatusChange = (server, newStatus) => {
+  serverManager.updateWorkStatus(server.id, newStatus)
+  ElMessage.success(`已更新服务器工作状态为: ${serverManager.getWorkStatusText(newStatus)}`)
+}
+
 // 初始化现有服务器的负载监控
 onMounted(() => {
   localServers.value.forEach(server => {
@@ -185,259 +229,192 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-card shadow="hover" class="status-card">
-    <template #header>
-      <div class="card-header">
-        <div class="header-left">
-          <el-icon><Cpu /></el-icon>
-          <span class="header-title">服务器状态监控</span>
-        </div>
-        <el-button 
-          type="primary" 
-          size="small" 
-          @click="addServerDialogVisible = true"
-          class="header-button"
-        >
-          <el-icon><Plus /></el-icon>
-          <span>添加服务器</span>
-        </el-button>
-      </div>
-    </template>
-    
-    <div class="server-list">
-      <div v-for="server in localServers" :key="server.name" class="server-item">
-        <div class="server-info">
-          <div class="server-title">
-            <h4>{{ server.name }}</h4>
-            <small class="server-address">{{ server.ip }}:{{ server.port }}</small>
-          </div>
-          <div class="server-actions">
-            <el-button 
-              type="primary" 
-              :icon="Setting"
-              circle
-              size="small"
-              @click="handleEditServer(server)"
-            />
-            <el-button 
-              type="danger" 
-              :icon="Delete"
-              circle
-              size="small"
-              @click="handleDeleteServer(server)"
-            />
-          </div>
-        </div>
-        <div class="server-status">
-          <el-tag :type="getStatusType(server.status)" size="small">
-            {{ getStatusText(server.status) }}
-          </el-tag>
-        </div>
-        <div class="server-metrics">
-          <span>负载: {{ server.load }}</span>
-          <span>内存: {{ server.memory }}</span>
-        </div>
-        <el-progress 
-          :percentage="parseInt(server.load)" 
-          :type="'line'"
-          :status="server.status === 'training' ? 'warning' : server.status === 'deploying' ? 'success' : ''"
-        />
-      </div>
+  <div class="server-status">
+    <div class="header">
+      <h3>服务器状态</h3>
+      <el-button type="primary" @click="showAddDialog = true">
+        <el-icon><Plus /></el-icon>添加服务器
+      </el-button>
     </div>
+
+    <el-table :data="serverManager.servers" border style="width: 100%">
+      <el-table-column label="名称" prop="name" min-width="120" />
+      <el-table-column label="类型" width="80">
+        <template #default="{ row }">
+          <el-tag :type="getServerTypeTag(row.type)">
+            {{ row.type.toUpperCase() }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <div class="status-container">
+            <el-tag :type="serverManager.getWorkStatusType(row.workStatus)" class="status-tag">
+              {{ serverManager.getWorkStatusText(row.workStatus) }}
+            </el-tag>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="资源使用" min-width="280">
+        <template #default="{ row }">
+          <div class="metrics">
+            <div class="metric-item">
+              <span>CPU:</span>
+              <el-progress 
+                :percentage="row.metrics.cpu"
+                :status="getResourceStatus(row.metrics.cpu)"
+              />
+            </div>
+            <div class="metric-item">
+              <span>内存:</span>
+              <el-progress 
+                :percentage="row.metrics.memory"
+                :status="getResourceStatus(row.metrics.memory)"
+              />
+            </div>
+            <div v-if="row.type === 'gpu'" class="metric-item">
+              <span>GPU:</span>
+              <el-progress 
+                :percentage="row.metrics.gpu"
+                :status="getResourceStatus(row.metrics.gpu)"
+              />
+            </div>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="更新时间" width="160">
+        <template #default="{ row }">
+          {{ new Date(row.lastUpdated).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="160" fixed="right">
+        <template #default="{ row }">
+          <div class="operation-container">
+            <el-select 
+              v-model="row.workStatus" 
+              size="small"
+              style="width: 90px"
+              @change="(val) => handleWorkStatusChange(row, val)"
+            >
+              <el-option
+                v-for="status in Object.values(serverManager.WORK_STATUS)"
+                :key="status"
+                :label="status"
+                :value="status"
+              />
+            </el-select>
+            <el-button 
+              size="small"
+              type="danger"
+              @click="handleDeleteServer(row)"
+            >
+              删除
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <!-- 添加服务器对话框 -->
     <el-dialog
-      v-model="addServerDialogVisible"
+      v-model="showAddDialog"
       title="添加服务器"
-      width="30%"
+      width="500px"
     >
-      <el-form :model="newServer" label-width="100px">
-        <el-form-item label="服务器名称">
-          <el-input v-model="newServer.name" />
+      <el-form 
+        ref="formRef"
+        :model="serverForm"
+        :rules="rules"
+        label-width="100px"
+      >
+        <el-form-item label="服务器名称" prop="name">
+          <el-input v-model="serverForm.name" />
         </el-form-item>
-        <el-form-item label="服务器类型">
-          <el-select v-model="newServer.type" placeholder="请选择服务器类型">
-            <el-option
-              v-for="item in serverTypes"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+        <el-form-item label="服务器类型" prop="type">
+          <el-select v-model="serverForm.type">
+            <el-option label="GPU服务器" value="gpu" />
+            <el-option label="CPU服务器" value="cpu" />
+            <el-option label="TPU服务器" value="tpu" />
           </el-select>
         </el-form-item>
-        <el-form-item label="IP地址">
-          <el-input v-model="newServer.ip" placeholder="例如: 192.168.1.100" />
+        <el-form-item label="IP地址" prop="ip">
+          <el-input v-model="serverForm.ip" />
         </el-form-item>
-        <el-form-item label="端口">
-          <el-input v-model="newServer.port" placeholder="例如: 8080" />
-        </el-form-item>
-        <el-form-item label="初始状态">
-          <el-select v-model="newServer.status" placeholder="请选择服务器状态">
-            <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+        <el-form-item label="端口" prop="port">
+          <el-input v-model="serverForm.port" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="addServerDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleAddServer">确定</el-button>
+          <el-button @click="showAddDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleAddServer">
+            确定
+          </el-button>
         </span>
       </template>
     </el-dialog>
-
-    <!-- 编辑服务器对话框 -->
-    <el-dialog
-      v-model="editServerDialogVisible"
-      title="编辑服务器"
-      width="30%"
-    >
-      <el-form v-if="currentServer" :model="currentServer" label-width="100px">
-        <el-form-item label="服务器名称">
-          <el-input v-model="currentServer.name" />
-        </el-form-item>
-        <el-form-item label="IP地址">
-          <el-input v-model="currentServer.ip" />
-        </el-form-item>
-        <el-form-item label="端口">
-          <el-input v-model="currentServer.port" />
-        </el-form-item>
-        <el-form-item label="服务器状态">
-          <el-select v-model="currentServer.status">
-            <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="editServerDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleUpdateServer">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.status-card {
-  height: 100%;
+.server-status {
+  padding: 20px;
 }
 
-.card-header {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 32px; /* 固定头部高度 */
+  margin-bottom: 20px;
 }
 
-.header-left {
+.header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #303133;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-item {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.header-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.header-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 15px;
-  height: 32px;
-}
-
-.server-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.server-item {
-  padding: 15px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ebeef5;
-  transition: all 0.3s ease;
-}
-
-.server-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
-}
-
-.server-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-}
-
-.server-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.server-title h4 {
-  margin: 0;
-  color: #303133;
-}
-
-.server-address {
-  color: #909399;
-  font-size: 12px;
-}
-
-.server-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.server-status {
-  margin-bottom: 10px;
-}
-
-.server-metrics {
-  display: flex;
-  gap: 20px;
+.metric-item span {
+  width: 50px;
   color: #606266;
-  font-size: 13px;
-  margin-bottom: 10px;
 }
 
-:deep(.el-progress-bar__inner) {
-  transition: all 0.3s ease;
+.metric-item :deep(.el-progress) {
+  width: calc(100% - 50px);
+  margin: 0;
 }
 
-:deep(.el-progress--line) {
-  margin-bottom: 0;
-}
-
-.dialog-footer {
+.status-container {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
 }
 
-:deep(.el-dialog__body) {
-  padding-top: 20px;
+.status-tag {
+  min-width: 50px;
+  text-align: center;
+  padding: 0 8px;
 }
 
-:deep(.el-card__header) {
-  padding: 15px 20px;
-  border-bottom: 1px solid #ebeef5;
+.operation-container {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+:deep(.el-button--small) {
+  padding: 5px 11px;
 }
 </style> 

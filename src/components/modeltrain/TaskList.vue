@@ -1,14 +1,22 @@
 <template>
   <el-table 
     v-loading="loading"
-    :data="tasks" 
+    :data="modelTrain.trainTasks" 
     border 
     style="width: 100%"
   >
     <el-table-column label="任务名称" prop="name" min-width="180" />
     <el-table-column label="数据集" prop="dataset" min-width="150" />
-    <el-table-column label="模型类型" prop="modelType" width="120" />
-    <el-table-column label="训练服务器" prop="server" width="150" />
+    <el-table-column label="模型类型" width="120">
+      <template #default="{ row }">
+        {{ getModelTypeLabel(row.modelType) }}
+      </template>
+    </el-table-column>
+    <el-table-column label="训练服务器" width="150">
+      <template #default="{ row }">
+        {{ serverManager.getServerById(row.server)?.name || row.server }}
+      </template>
+    </el-table-column>
     <el-table-column label="状态" width="100">
       <template #default="{ row }">
         <el-tag :type="getStatusType(row.status)">
@@ -54,7 +62,10 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useServerManagerStore } from '@/stores/serverManager'
+import { useModelTrainStore } from '@/stores/modelTrain'
 
 const props = defineProps({
   tasks: {
@@ -68,6 +79,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:tasks', 'view-details'])
+const serverManager = useServerManagerStore()
+const modelTrain = useModelTrainStore()
 
 const getStatusType = (status) => {
   const statusMap = {
@@ -87,18 +100,28 @@ const getProgressStatus = (status) => {
   return ''
 }
 
+const getModelTypeLabel = (type) => {
+  const typeMap = {
+    'generative': '生成式模型',
+    'neural_network': '神经网络模型',
+    'reinforcement': '强化学习模型'
+  }
+  return typeMap[type] || type
+}
+
 const handleTaskAction = async (task) => {
   try {
     if (task.status === 'running') {
       await ElMessageBox.confirm('确定要停止训练任务吗？', '警告', {
         type: 'warning'
       })
-      task.status = 'stopped'
-      ElMessage.success('已停止训练任务')
+      modelTrain.stopTask(task.id)
     } else {
-      task.status = 'running'
-      task.progress = 0
-      ElMessage.success('已启动训练任务')
+      if (!modelTrain.canStartTask(task.id)) {
+        ElMessage.error('所选服务器当前不可用')
+        return
+      }
+      modelTrain.startTask(task.id)
     }
   } catch (error) {
     console.error('操作失败:', error)
@@ -110,9 +133,7 @@ const handleDelete = async (task) => {
     await ElMessageBox.confirm('确定要删除该训练任务吗？', '警告', {
       type: 'warning'
     })
-    const newTasks = props.tasks.filter(t => t.id !== task.id)
-    emit('update:tasks', newTasks)
-    ElMessage.success('删除成功')
+    modelTrain.deleteTask(task.id)
   } catch (error) {
     // 用户取消删除
   }

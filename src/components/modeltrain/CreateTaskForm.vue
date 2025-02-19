@@ -23,16 +23,24 @@
     <el-form-item label="训练服务器" prop="server">
       <el-select v-model="form.server" placeholder="请选择训练服务器">
         <el-option 
-          v-for="server in servers" 
+          v-for="server in serverManager.trainingServers"
           :key="server.id" 
           :label="server.name" 
           :value="server.id"
         >
           <div class="server-option">
             <span>{{ server.name }}</span>
-            <el-tag size="small" :type="server.status === 'online' ? 'success' : 'danger'">
-              {{ server.status }}
-            </el-tag>
+            <div class="server-info">
+              <el-tag size="small" :type="getStatusType(server.status)">
+                {{ server.status }}
+              </el-tag>
+              <el-tag size="small" :type="serverManager.getWorkStatusType(server.workStatus)">
+                {{ serverManager.getWorkStatusText(server.workStatus) }}
+              </el-tag>
+              <span class="resource-info">
+                GPU: {{ server.metrics.gpu }}%
+              </span>
+            </div>
           </div>
         </el-option>
       </el-select>
@@ -190,13 +198,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useServerManagerStore } from '@/stores/serverManager'
 
 const props = defineProps({
   modelTypes: {
-    type: Array,
-    required: true
-  },
-  servers: {
     type: Array,
     required: true
   },
@@ -253,6 +258,18 @@ const rules = {
   ]
 }
 
+const serverManager = useServerManagerStore()
+
+const getStatusType = (status) => {
+  const statusMap = {
+    'online': 'success',
+    'offline': 'danger',
+    'busy': 'warning',
+    'maintenance': 'info'
+  }
+  return statusMap[status]
+}
+
 defineExpose({
   form,
   formRef
@@ -265,5 +282,16 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding-right: 8px;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-info {
+  font-size: 0.8em;
+  color: #606266;
 }
 </style> 

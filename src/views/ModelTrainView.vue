@@ -2,14 +2,19 @@
   <div class="model-train">
     <div class="header">
       <h2>模型训练</h2>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <el-icon><Plus /></el-icon>新建训练任务
-      </el-button>
+      <div class="header-buttons">
+        <el-button type="primary" @click="handleFullFeature">
+          <el-icon><Monitor /></el-icon>完整功能
+        </el-button>
+        <el-button type="primary" @click="showCreateDialog = true">
+          <el-icon><Plus /></el-icon>新建训练任务
+        </el-button>
+      </div>
     </div>
 
     <!-- 训练任务列表 -->
     <TaskList
-      v-model:tasks="trainTasks"
+      v-model:tasks="modelTrain.trainTasks"
       :loading="loading"
       @view-details="handleViewDetails"
     />
@@ -23,7 +28,6 @@
       <CreateTaskForm
         ref="createFormRef"
         :model-types="modelTypes"
-        :servers="servers"
         :available-features="availableFeatures"
       />
       <template #footer>
@@ -53,53 +57,25 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Monitor } from '@element-plus/icons-vue'
 import TaskList from '@/components/modeltrain/TaskList.vue'
 import CreateTaskForm from '@/components/modeltrain/CreateTaskForm.vue'
 import TaskDetails from '@/components/modeltrain/TaskDetails.vue'
+import { useModelTrainStore } from '@/stores/modelTrain'
+import { config } from '@/config/api'
 
-// 页面状态
+const modelTrain = useModelTrainStore()
 const loading = ref(false)
 const showCreateDialog = ref(false)
 const showDetails = ref(false)
 const currentTask = ref(null)
 const createFormRef = ref(null)
 
-// 模拟数据
-const trainTasks = ref([
-  {
-    id: 1,
-    name: '异常检测模型训练',
-    dataset: '设备运行数据集',
-    modelType: 'LSTM',
-    server: 'GPU-Server-01',
-    status: 'running',
-    progress: 45
-  },
-  {
-    id: 2,
-    name: '预测性维护模型',
-    dataset: '历史故障数据',
-    modelType: 'RandomForest',
-    server: 'GPU-Server-02',
-    status: 'completed',
-    progress: 100
-  }
-])
-
 // 模型类型选项
 const modelTypes = [
-  { label: 'LSTM', value: 'lstm' },
-  { label: '随机森林', value: 'random_forest' },
-  { label: '神经网络', value: 'neural_network' },
-  { label: 'XGBoost', value: 'xgboost' }
-]
-
-// 训练服务器选项
-const servers = [
-  { id: 1, name: 'GPU-Server-01', status: 'online' },
-  { id: 2, name: 'GPU-Server-02', status: 'online' },
-  { id: 3, name: 'CPU-Server-01', status: 'offline' }
+  { label: '生成式模型', value: 'generative' },
+  { label: '神经网络模型', value: 'neural_network' },
+  { label: '强化学习模型', value: 'reinforcement' }
 ]
 
 // 可用特征列表
@@ -128,17 +104,13 @@ const handleCreateTask = async () => {
     await formRef.validate()
     loading.value = true
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
     const form = createFormRef.value.form
-    const newTask = {
-      id: trainTasks.value.length + 1,
-      ...form,
-      status: 'pending',
-      progress: 0
-    }
-    trainTasks.value.push(newTask)
+    modelTrain.addTask({
+      name: form.name,
+      dataset: `${form.dataSource}数据集`,
+      modelType: form.modelType,
+      server: form.server
+    })
     
     showCreateDialog.value = false
     ElMessage.success('创建任务成功')
@@ -148,6 +120,11 @@ const handleCreateTask = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 处理完整功能按钮点击
+const handleFullFeature = () => {
+  window.open(config.FULL_FEATURE_URL, '_blank')
 }
 </script>
 
@@ -167,5 +144,10 @@ const handleCreateTask = async () => {
   margin: 0;
   font-size: 20px;
   color: #303133;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
 }
 </style> 

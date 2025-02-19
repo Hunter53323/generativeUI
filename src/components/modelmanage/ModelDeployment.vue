@@ -29,30 +29,48 @@
       </div>
     </div>
 
-    <!-- 模型发布区域 -->
+    <!-- 模型摊销区域 -->
     <div class="section">
-      <h3>模型发布</h3>
+      <h3>模型摊销</h3>
       <div class="deploy-form">
-        <el-form :model="deployForm" label-width="100px" class="deploy-form-content">
-          <el-form-item label="摊销服务器">
-            <el-select
-              v-model="selectedServer"
-              placeholder="请选择"
+        <el-form 
+          ref="deployFormRef"
+          :model="deployForm" 
+          :rules="rules"
+          label-width="100px" 
+          class="deploy-form-content"
+        >
+          <el-form-item label="摊销服务器" prop="server">
+            <el-select 
+              v-model="deployForm.server" 
+              placeholder="请选择摊销服务器"
               class="deploy-select"
             >
-              <el-option
-                v-for="item in serverOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
+              <el-option 
+                v-for="server in serverManager.deploymentServers"
+                :key="server.id" 
+                :label="server.name" 
+                :value="server.id"
+              >
+                <div class="server-option">
+                  <span>{{ server.name }}</span>
+                  <div class="server-info">
+                    <el-tag size="small" :type="getStatusType(server.status)">
+                      {{ server.status }}
+                    </el-tag>
+                    <span class="resource-info">
+                      CPU: {{ server.metrics.cpu }}%
+                    </span>
+                  </div>
+                </div>
+              </el-option>
             </el-select>
           </el-form-item>
 
-          <el-form-item label="导出格式">
+          <el-form-item label="导出格式" prop="format">
             <el-select
-              v-model="selectedFormat"
-              placeholder="请选择"
+              v-model="deployForm.format"
+              placeholder="请选择导出格式"
               class="deploy-select"
             >
               <el-option
@@ -69,7 +87,7 @@
               type="primary" 
               @click="handleDeploy" 
               :loading="deploymentState.isDeploying"
-              :disabled="!selectedModel || !selectedFormat || !selectedServer || deploymentState.isDeploying"
+              :disabled="!selectedModel || !deployForm.format || !deployForm.server || deploymentState.isDeploying"
             >
               {{ deploymentState.isDeploying ? `摊销中 ${deploymentState.progress}%` : '开始摊销' }}
             </el-button>
@@ -84,9 +102,9 @@
         </el-form>
       </div>
 
-      <!-- 摊销模型库 -->
+      <!-- 已摊销模型列表 -->
       <div class="deployed-models">
-        <h4>摊销模型库</h4>
+        <h4>已摊销模型</h4>
         <el-table :data="deployedModels" style="width: 100%">
           <el-table-column prop="name" label="模型名称" show-overflow-tooltip />
           <el-table-column prop="type" label="类型">
@@ -106,7 +124,7 @@
           <el-table-column prop="server" label="服务器">
             <template #default="scope">
               <el-tag type="success">
-                {{ serverOptions.find(s => s.value === scope.row.server)?.label }}
+                {{ serverManager.getServerById(scope.row.server)?.name || scope.row.server }}
               </el-tag>
             </template>
           </el-table-column>
@@ -133,10 +151,10 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { useServerManagerStore } from '@/stores/serverManager'
 import { 
   selectedModel,
   deployedModels,
-  serverOptions,
   exportFormats,
   modelTypes,
   addDeployedModel,
@@ -145,48 +163,99 @@ import {
   cancelDeployment
 } from '@/stores/modelmanage'
 
-const selectedFormat = ref('')
-const selectedServer = ref('')
+const serverManager = useServerManagerStore()
+const deployFormRef = ref(null)
 
-const handleDeploy = () => {
-  if (!selectedModel.value || !selectedFormat.value || !selectedServer.value) {
-    ElMessage.warning('请选择模型、导出格式和服务器')
-    return
+const deployForm = ref({
+  server: '',
+  format: ''
+})
+
+const rules = {
+  server: [
+    { required: true, message: '请选择摊销服务器', trigger: 'change' }
+  ],
+  format: [
+    { required: true, message: '请选择导出格式', trigger: 'change' }
+  ]
+}
+
+const getStatusType = (status) => {
+  const statusMap = {
+    'online': 'success',
+    'offline': 'danger',
+    'busy': 'warning',
+    'maintenance': 'info'
   }
+  return statusMap[status]
+}
+
+const handleDeploy = async () => {
+  if (!deployFormRef.value) return
   
-  ElMessage.info('正在进行模型摊销，请稍候...')
-  startDeployment()
-  
-  // 一分钟后完成部署
-  setTimeout(() => {
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
-    const fileMap = {
-      'iec61499': '/models/control_61499.fbt',
-      'iec61131': '/models/control_61131.xml',
-      'c': '/models/control.c'
+  try {
+    await deployFormRef.value.validate()
+    
+    if (!selectedModel.value) {
+      ElMessage.warning('请先选择要摊销的模型')
+      return
     }
-    
-    const deployedModel = {
-      id: Date.now(),
-      originalName: selectedModel.value.name,
-      name: `${selectedModel.value.name}_${timestamp}`,
-      type: selectedModel.value.type,
-      format: selectedFormat.value,
-      server: selectedServer.value,
-      deployTime: new Date().toLocaleString(),
-      downloadUrl: fileMap[selectedFormat.value]
+
+    // 检查服务器是否可用
+    const server = serverManager.getServerById(deployForm.value.server)
+    if (!server) {
+      ElMessage.error('所选服务器不存在')
+      return
     }
+
+    // 更新服务器状态为摊销中
+    serverManager.updateWorkStatus(server.id, serverManager.WORK_STATUS.DEPLOYING)
     
-    addDeployedModel(deployedModel)
-    ElMessage.success(`模型已在${selectedServer.value === 'server1' ? '机架服务器1' : '机架服务器2'}上完成摊销`)
+    ElMessage.info('正在进行模型摊销，请稍候...')
+    startDeployment()
     
-    // 重置选择
-    selectedFormat.value = ''
-    selectedServer.value = ''
-  }, 60000) // 改为60秒
+    // 模拟摊销过程
+    setTimeout(() => {
+      const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
+      const fileMap = {
+        'iec61499': '/models/control_61499.fbt',
+        'iec61131': '/models/control_61131.xml',
+        'c': '/models/control.c'
+      }
+      
+      const deployedModel = {
+        id: Date.now(),
+        originalName: selectedModel.value.name,
+        name: `${selectedModel.value.name}_${timestamp}`,
+        type: selectedModel.value.type,
+        format: deployForm.value.format,
+        server: deployForm.value.server,
+        deployTime: new Date().toLocaleString(),
+        downloadUrl: fileMap[deployForm.value.format]
+      }
+      
+      addDeployedModel(deployedModel)
+      // 摊销完成后将服务器状态改回空闲
+      serverManager.updateWorkStatus(server.id, serverManager.WORK_STATUS.IDLE)
+      ElMessage.success('模型摊销完成')
+      
+      // 重置表单
+      deployForm.value = {
+        server: '',
+        format: ''
+      }
+    }, 60000) // 60秒后完成
+  } catch (error) {
+    console.error('摊销失败:', error)
+    ElMessage.error('摊销失败，请重试')
+  }
 }
 
 const handleCancelDeploy = () => {
+  // 取消摊销时，将服务器状态改回空闲
+  if (deployForm.value.server) {
+    serverManager.updateWorkStatus(deployForm.value.server, serverManager.WORK_STATUS.IDLE)
+  }
   cancelDeployment()
   ElMessage.info('已取消模型摊销')
 }
@@ -218,6 +287,16 @@ const handleModelDownload = (model) => {
   font-weight: bold;
 }
 
+.section {
+  margin-bottom: 24px;
+}
+
+.section h3 {
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: #606266;
+}
+
 .deploy-form {
   background-color: #f5f7fa;
   border-radius: 4px;
@@ -226,31 +305,11 @@ const handleModelDownload = (model) => {
 }
 
 .deploy-form-content {
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .deploy-select {
   width: 100%;
-}
-
-.section h3 {
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #606266;
-}
-
-.deployed-models {
-  margin-top: 30px;
-}
-
-.deployed-models h4 {
-  margin-bottom: 15px;
-  font-size: 14px;
-  color: #606266;
-}
-
-.selected-model {
-  margin-bottom: 20px;
 }
 
 .empty-hint {
@@ -259,7 +318,23 @@ const handleModelDownload = (model) => {
   padding: 20px;
   background: #f5f7fa;
   border-radius: 4px;
-  margin-bottom: 20px;
+}
+
+.server-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-info {
+  font-size: 0.8em;
+  color: #909399;
 }
 
 :deep(.el-descriptions) {
@@ -267,11 +342,5 @@ const handleModelDownload = (model) => {
   background-color: #fff;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-
-.deploy-form-content .el-form-item:last-child {
-  margin-bottom: 0;
-  display: flex;
-  gap: 12px;
 }
 </style> 
