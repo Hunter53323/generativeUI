@@ -2,9 +2,6 @@
   <div class="edge-backend">
     <div class="header">
       <h2>边缘设备后台</h2>
-      <el-button type="primary" @click="showConnectionDialog = true">
-        <el-icon><Plus /></el-icon>新建连接
-      </el-button>
     </div>
 
     <!-- 连接列表 -->
@@ -20,17 +17,11 @@
       v-if="edgeBackend.currentConnection"
       :connection="edgeBackend.currentConnection"
     />
-
-    <!-- 新建连接对话框 -->
-    <ConnectionDialog
-      v-model="showConnectionDialog"
-      @submit="handleCreateConnection"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import ConnectionList from '@/components/edgebackend/ConnectionList.vue'
@@ -40,6 +31,7 @@ import { useEdgeBackendStore } from '@/stores/edgeBackend'
 
 const edgeBackend = useEdgeBackendStore()
 const showConnectionDialog = ref(false)
+const currentConnection = computed(() => edgeBackend.currentConnection)
 
 // 处理创建新连接
 const handleCreateConnection = async (connectionData) => {

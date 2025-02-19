@@ -1,8 +1,9 @@
 <template>
   <el-dialog
+    :title="isEdit ? '编辑连接' : '新建连接'"
     v-model="dialogVisible"
-    title="新建连接"
     width="500px"
+    @close="handleClose"
   >
     <el-form
       ref="formRef"
@@ -10,7 +11,7 @@
       :rules="rules"
       label-width="100px"
     >
-      <el-form-item label="连接名称" prop="name">
+      <el-form-item label="名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入连接名称" />
       </el-form-item>
       
@@ -43,10 +44,8 @@
     
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">
-          确定
-        </el-button>
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
       </span>
     </template>
   </el-dialog>
@@ -54,28 +53,32 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
-  modelValue: Boolean
+  visible: Boolean,
+  isEdit: Boolean,
+  connection: {
+    type: Object,
+    default: () => ({
+      name: '',
+      host: '',
+      port: 9654,
+      username: '',
+      password: ''
+    })
+  }
 })
 
-const emit = defineEmits(['update:modelValue', 'submit'])
+const emit = defineEmits(['update:visible', 'submit'])
 
 const dialogVisible = ref(false)
 const formRef = ref(null)
 
-watch(() => props.modelValue, (val) => {
-  dialogVisible.value = val
-})
-
-watch(dialogVisible, (val) => {
-  emit('update:modelValue', val)
-})
-
 const form = ref({
   name: '',
   host: '',
-  port: 22,
+  port: 9654,
   username: '',
   password: ''
 })
@@ -88,7 +91,7 @@ const rules = {
     { required: true, message: '请输入主机地址', trigger: 'blur' }
   ],
   port: [
-    { required: true, message: '请输入端口号', trigger: 'blur' }
+    { required: true, message: '请输入端口', trigger: 'blur' }
   ],
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' }
@@ -98,21 +101,51 @@ const rules = {
   ]
 }
 
+// 监听visible变化
+watch(() => props.visible, (val) => {
+  dialogVisible.value = val
+  if (val && props.isEdit) {
+    // 编辑模式，填充表单
+    form.value = { ...props.connection }
+  } else {
+    // 新建模式，重置表单
+    form.value = {
+      name: '',
+      host: '',
+      port: 9654,
+      username: '',
+      password: ''
+    }
+  }
+})
+
+// 监听dialog visible变化
+watch(dialogVisible, (val) => {
+  emit('update:visible', val)
+})
+
+const handleClose = () => {
+  dialogVisible.value = false
+  formRef.value?.resetFields()
+}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   
   try {
     await formRef.value.validate()
     emit('submit', { ...form.value })
-    form.value = {
-      name: '',
-      host: '',
-      port: 22,
-      username: '',
-      password: ''
-    }
+    handleClose()
   } catch (error) {
-    console.error('表单验证失败:', error)
+    ElMessage.error('请填写完整信息')
   }
 }
-</script> 
+</script>
+
+<style scoped>
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style> 

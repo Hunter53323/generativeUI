@@ -59,10 +59,19 @@ export const useEdgeBackendStore = defineStore('edgeBackend', () => {
     }
   }
 
+  // 添加更新连接方法
+  const updateConnection = async (connection) => {
+    const index = connections.value.findIndex(c => c.id === connection.id)
+    if (index !== -1) {
+      connections.value[index] = { ...connection }
+    }
+  }
+
   return {
     connections,
     currentConnection,
     createConnection,
+    updateConnection,
     connect,
     disconnect,
     deleteConnection
