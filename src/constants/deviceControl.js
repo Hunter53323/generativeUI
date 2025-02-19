@@ -9,13 +9,11 @@ export const RUNNING_STATUS = {
 export const DEVICE_PARAMS_CONFIG = {
   stepper_motor: {
     controlParams: [
-      { key: 'speed', label: '转速', unit: 'RPM' },
-      { key: 'current', label: '电流', unit: 'A' },
-      { key: 'voltage', label: '电压', unit: 'V' },
-      { key: 'power', label: '功率', unit: 'kW' },
-      { key: 'position', label: '位置', unit: '°' }
+      { key: 'transmitter', label: '发送机占空比', unit: '%' },
+      { key: 'receiver', label: '接收机占空比', unit: '%' },
+      { key: 'axis_deviation', label: '轴角偏差', unit: '°' }
     ],
-    chartParams: ['speed', 'current', 'position', 'power']
+    chartParams: ['transmitter', 'receiver', 'axis_deviation']
   },
   async_motor: {
     controlParams: [
@@ -74,6 +72,26 @@ export const DEVICE_PARAMS_CONFIG = {
       { key: 'power', label: '功率', unit: 'kW' }
     ],
     chartParams: ['speed', 'pressure', 'temperature', 'power']
+  },
+  dc_motor: {
+    controlParams: [
+      { key: 'pwm', label: 'PWM', unit: '' },
+      { key: 'voltage', label: '电压', unit: 'V' },
+      { key: 'current_u', label: 'U相电流', unit: 'mA' },
+      { key: 'current_v', label: 'V相电流', unit: 'mA' },
+      { key: 'current_w', label: 'W相电流', unit: 'mA' },
+      { key: 'current_bus', label: '母线电流', unit: 'mA' },
+      { key: 'temperature', label: '温度', unit: '℃' }
+    ],
+    chartParams: [
+      'pwm',
+      'voltage',
+      'current_u',
+      'current_v', 
+      'current_w',
+      'current_bus',
+      'temperature'
+    ]
   },
   // ... 其他设备类型的参数配置
 }

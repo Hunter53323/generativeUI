@@ -14,6 +14,11 @@ export const PROTOCOL_TYPES = [
     label: 'RS485',
     value: 'rs485',
     type: 'serial'
+  },
+  {
+    label: 'HTTP',
+    value: 'http',
+    type: 'network'
   }
 ]
 
@@ -22,9 +27,10 @@ export const DEVICE_TYPES = [
   { label: '步进电机', value: 'stepper_motor' },
   { label: '异步电机', value: 'async_motor' },
   { label: '永磁电机', value: 'pmsm_motor' },
+  { label: '直流无刷电机', value: 'dc_motor' },
   { label: '风机', value: 'fan' },
   { label: '水泵', value: 'pump' },
-  { label: '压缩机', value: 'compressor' }
+  { label: '压缩机', value: 'compressor' },
 ]
 
 // 状态选项

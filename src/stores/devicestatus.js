@@ -10,10 +10,10 @@ export const useDeviceStore = defineStore('device', () => {
       type: 'stepper_motor',
       status: 'normal',
       connected: false,
-      protocol: 'modbus_rtu',
+      protocol: 'http',
       config: {
-        com: 'COM1',
-        baudRate: 9600
+        ip: '192.168.3.72',
+        port: '8080'
       }
     },
     {
@@ -74,6 +74,18 @@ export const useDeviceStore = defineStore('device', () => {
       config: {
         ip: '192.168.1.102',
         port: '502'
+      }
+    },
+    {
+      id: 'dc_motor_1',
+      name: '直流无刷电机',
+      type: 'dc_motor',
+      status: 'normal',
+      connected: true,
+      protocol: 'http',
+      config: {
+        ip: '192.168.3.71',
+        port: '8000'
       }
     }
   ])
