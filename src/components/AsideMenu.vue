@@ -99,7 +99,7 @@ watch(() => route.path, (newPath) => {
         <el-icon><turn-off /></el-icon>
         <span>模型管理</span>
       </el-menu-item>
-      <el-menu-item index="/training">
+      <el-menu-item index="/modeltrain">
         <el-icon><message /></el-icon>
         <span>模型训练</span>
       </el-menu-item>

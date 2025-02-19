@@ -9,6 +9,7 @@ import HomeView from '../views/HomeView.vue'
 import DeviceDashboardView from '../views/DeviceDashboardView.vue'
 import EdgeDevicesView from '../views/EdgeDevicesView.vue'
 import DeviceDatabaseView from '../views/DeviceDatabaseView.vue'
+import ModelTrainView from '@/views/ModelTrainView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,15 @@ const router = createRouter({
       path: '/device-database',
       name: 'device-database',
       component: DeviceDatabaseView
+    },
+    {
+      path: '/modeltrain',
+      name: 'modeltrain',
+      component: ModelTrainView,
+      meta: {
+        title: '模型训练',
+        icon: 'Model'
+      }
     }
   ]
 })
